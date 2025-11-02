@@ -143,7 +143,7 @@ namespace ExchangeSystem.Services
         public Task<CsvParseResult> ParseReceiptDataAsync(Stream csvStream, string fileName)
         {
             var result = new CsvParseResult();
-            var parsedData = new List<object>();
+            var parsedData = new List<ReceiptDataRow>();
 
             try
             {
@@ -156,8 +156,9 @@ namespace ExchangeSystem.Services
                     BadDataFound = null
                 });
 
-                // Парсинг данных прихода
-                var records = csv.GetRecords<dynamic>();
+                csv.Context.RegisterClassMap<ReceiptDataRowMap>();
+
+                var records = csv.GetRecords<ReceiptDataRow>();
                 var rowNumber = 1;
 
                 foreach (var record in records)
@@ -167,7 +168,21 @@ namespace ExchangeSystem.Services
 
                     try
                     {
-                        // Валидация и обработка данных прихода
+                        // Валидация данных
+                        if (string.IsNullOrEmpty(record.ProductName))
+                        {
+                            result.Errors.Add($"Строка {rowNumber}: Отсутствует название продукта");
+                            result.ErrorRows++;
+                            continue;
+                        }
+
+                        if (record.ReceiptDate == default)
+                        {
+                            result.Errors.Add($"Строка {rowNumber}: Неверная дата прихода");
+                            result.ErrorRows++;
+                            continue;
+                        }
+
                         parsedData.Add(record);
                         result.ProcessedRows++;
                     }
@@ -178,7 +193,7 @@ namespace ExchangeSystem.Services
                     }
                 }
 
-                result.ParsedData = parsedData;
+                result.ParsedData = parsedData.Cast<object>().ToList();
                 result.IsSuccess = result.ErrorRows == 0;
             }
             catch (Exception ex)
@@ -222,6 +237,26 @@ namespace ExchangeSystem.Services
             Map(m => m.ProductCode).Index(2);    // "Шифр"
             Map(m => m.Category).Index(6);       // "Птица", "Мясо" и т.д. (7-й столбец)
             Map(m => m.Unit).Index(7);           // "кг", "шт" и т.д. (8-й столбец)
+        }
+    }
+
+    public class ReceiptDataRowMap : ClassMap<ReceiptDataRow>
+    {
+        public ReceiptDataRowMap()
+        {
+            Map(m => m.ProductId).Name("id продукта");
+            Map(m => m.ProductCode).Name("Шифр продукта");
+            Map(m => m.ProductName).Name("Название продукта");
+            Map(m => m.Unit).Ignore(); // Единица измерения будет получена из справочника продуктов
+            Map(m => m.ReceiptDate).Name("Дата").TypeConverter<DateTimeConverter>();
+            Map(m => m.DocumentNumber).Name("Номер накладной");
+            Map(m => m.SupplierName).Name("Название поставщика");
+            Map(m => m.SupplierUnp).Name("id поставщика").Optional();
+            Map(m => m.ContractDate).Name("Срок хранения").TypeConverter<DateTimeConverter>().Optional();
+            Map(m => m.ContractNumber).Ignore(); // Номер договора не указан в CSV
+            Map(m => m.Quantity).Name("К-во продукта").TypeConverter<DecimalConverter>();
+            Map(m => m.Price).Ignore(); // Цена будет вычислена из TotalCost / Quantity в ProcessReceiptData
+            Map(m => m.TotalCost).Name("Стоимость").TypeConverter<DecimalConverter>();
         }
     }
 

@@ -41,12 +41,26 @@
                         </table>
                     </div>
 
+                    <!-- Пагинация для УО -->
+                    <nav aria-label="Пагинация УО">
+                        <ul class="pagination justify-content-center" id="educationDepartmentsPagination">
+                            <!-- Пагинация будет добавлена динамически -->
+                        </ul>
+                    </nav>
+
                     <h4 class="mt-4">Организации в выбранном УО</h4>
-                    <div class="mb-3">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
                         <label for="selectedEducationDepartment" class="form-label">Выберите УО для просмотра организаций</label>
-                        <select class="form-select" id="selectedEducationDepartment" onchange="loadOrganizationsForSelectedDepartment()">
+                        <select class="form-select" id="selectedEducationDepartment" onchange="currentOrganizationsPage = 1; loadOrganizationsForSelectedDepartment(1)">
                             <option value="">Выберите УО</option>
                         </select>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button class="btn btn-success" id="addOrganizationBtn" data-bs-toggle="modal" data-bs-target="#organizationModal" onclick="openOrganizationModal()" disabled>
+                                <i class="fas fa-plus me-2"></i>Добавить организацию
+                            </button>
+                        </div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
@@ -55,14 +69,23 @@
                                     <th>Название организации</th>
                                     <th>Город</th>
                                     <th>Адрес</th>
+                                    <th>Телефон</th>
+                                    <th>Менеджер</th>
                                     <th>Действия</th>
                                 </tr>
                             </thead>
                             <tbody id="organizationsTableBody">
-                                <tr><td colspan="4" class="text-center">Выберите УО для просмотра организаций.</td></tr>
+                                <tr><td colspan="6" class="text-center">Выберите УО для просмотра организаций.</td></tr>
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Пагинация для организаций -->
+                    <nav aria-label="Пагинация организаций">
+                        <ul class="pagination justify-content-center" id="organizationsPagination">
+                            <!-- Пагинация будет добавлена динамически -->
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </div>
@@ -70,12 +93,12 @@
 </div>
 
 <!-- Education Department Modal -->
-<div class="modal fade" id="educationDepartmentModal" tabindex="-1" aria-labelledby="educationDepartmentModalLabel" aria-hidden="true">
+<div class="modal fade" id="educationDepartmentModal" tabindex="-1" aria-labelledby="educationDepartmentModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="educationDepartmentModalLabel">Добавить/Редактировать УО</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="handleModalClose()"></button>
             </div>
             <div class="modal-body">
                 <form id="educationDepartmentForm">
@@ -104,12 +127,6 @@
                         <label for="educationDepartmentDirector" class="form-label">Имя директора</label>
                         <input type="text" class="form-control" id="educationDepartmentDirector">
                     </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="educationDepartmentIsActive">
-                        <label class="form-check-label" for="educationDepartmentIsActive">
-                            Активно
-                        </label>
-                    </div>
                     <button type="submit" class="btn btn-primary">Сохранить</button>
                 </form>
                 <div id="educationDepartmentFormResult" class="mt-3"></div>
@@ -118,12 +135,71 @@
     </div>
 </div>
 
+<!-- Organization Modal -->
+<div class="modal fade" id="organizationModal" tabindex="-1" aria-labelledby="organizationModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="organizationModalLabel">Добавить/Редактировать организацию</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="handleOrganizationModalClose()"></button>
+            </div>
+            <div class="modal-body">
+                <form id="organizationForm">
+                    <input type="hidden" id="organizationId">
+                    <input type="hidden" id="organizationEducationDepartmentId">
+                    <div class="mb-3">
+                        <label for="organizationName" class="form-label">Название организации *</label>
+                        <input type="text" class="form-control" id="organizationName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="organizationCity" class="form-label">Город</label>
+                        <input type="text" class="form-control" id="organizationCity">
+                    </div>
+                    <div class="mb-3">
+                        <label for="organizationAddress" class="form-label">Адрес</label>
+                        <input type="text" class="form-control" id="organizationAddress">
+                    </div>
+                    <div class="mb-3">
+                        <label for="organizationPhone" class="form-label">Телефон</label>
+                        <input type="text" class="form-control" id="organizationPhone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="organizationEmail" class="form-label">Менеджер</label>
+                        <input type="text" class="form-control" id="organizationEmail">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </form>
+                <div id="organizationFormResult" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
+        // Переменные для пагинации
+        let currentEducationDepartmentsPage = 1;
+        let currentOrganizationsPage = 1;
+        const itemsPerPage = 10;
+        let allEducationDepartments = [];
+        let allOrganizations = [];
+
         document.addEventListener('DOMContentLoaded', async function () {
             console.log('DOMContentLoaded: начало выполнения');
+            
+            // Принудительно очищаем кэш для отладки
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+                console.log('Кэш очищен');
+            }
+            
+            // Проверяем аутентификацию
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            console.log('Токен аутентификации:', token ? 'найден' : 'не найден');
+            
             // Проверяем, что api доступен, если нет - создаем
-            if (typeof api === 'undefined') {
+            if (typeof window.api === 'undefined') {
                 console.error('API не определен! Проверяем ApiClient...');
                 if (typeof ApiClient === 'undefined') {
                     console.error('ApiClient не определен! Перезагрузите страницу.');
@@ -132,9 +208,15 @@
                 console.log('Создаем новый экземпляр ApiClient...');
                 window.api = new ApiClient();
             }
-            console.log('API доступен:', api);
+            console.log('API доступен:', window.api);
             
             console.log('DOMContentLoaded: вызываем loadEducationDepartments');
+            
+            // Проверяем, что API доступен
+            if (typeof window.api === 'undefined' && typeof ApiClient !== 'undefined') {
+                window.api = new ApiClient();
+            }
+            
             await loadEducationDepartments();
 
             document.getElementById('educationDepartmentForm').addEventListener('submit', async function (e) {
@@ -146,14 +228,13 @@
                 const phone = document.getElementById('educationDepartmentPhone').value;
                 const email = document.getElementById('educationDepartmentEmail').value;
                 const directorName = document.getElementById('educationDepartmentDirector').value;
-                const isActive = document.getElementById('educationDepartmentIsActive').checked;
                 const resultDiv = document.getElementById('educationDepartmentFormResult');
 
-                const payload = { name, city, address, phone, email, directorName, isActive };
+                const payload = { name, city, address, phone, email, directorName, isActive: true };
                 console.log('Отправляем данные:', payload);
 
                 try {
-                    if (typeof api === 'undefined') {
+                    if (typeof window.api === 'undefined') {
                         console.error('API не определен в обработчике формы! Создаем новый экземпляр...');
                         window.api = new ApiClient();
                     }
@@ -161,32 +242,43 @@
                     let response;
                     if (id) {
                         console.log('Обновляем УО с ID:', id);
-                        response = await api.put(`/api/educationdepartments/${id}`, payload);
+                        response = await window.api.put(`/educationdepartments/${id}`, payload);
                     } else {
                         console.log('Создаем новое УО');
-                        response = await api.post('/api/educationdepartments', payload);
+                        response = await window.api.post('/educationdepartments', payload);
                     }
                     console.log('Получен ответ:', response);
 
                     if (response.success) {
                         resultDiv.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('educationDepartmentModal'));
-                        if (modal) {
-                            modal.hide();
-                        } else {
-                            // Если modal не найден, закрываем принудительно
+                        
+                        // Закрываем модальное окно правильно
                             const modalElement = document.getElementById('educationDepartmentModal');
-                            if (modalElement) {
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        
+                        // Принудительно закрываем модальное окно
                                 modalElement.classList.remove('show');
                                 modalElement.style.display = 'none';
+                        modalElement.setAttribute('aria-hidden', 'true');
+                        modalElement.removeAttribute('aria-modal');
+                        
+                        // Удаляем backdrop и восстанавливаем body
                                 document.body.classList.remove('modal-open');
-                                const backdrop = document.querySelector('.modal-backdrop');
-                                if (backdrop) {
-                                    backdrop.remove();
-                                }
-                            }
-                        }
-                        await loadEducationDepartments();
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                        
+                        // Удаляем все backdrop элементы
+                        const backdrops = document.querySelectorAll('.modal-backdrop');
+                        backdrops.forEach(backdrop => backdrop.remove());
+                        
+                        // Очищаем форму после успешного сохранения
+                        setTimeout(() => {
+                            document.getElementById('educationDepartmentForm').reset();
+                            document.getElementById('educationDepartmentFormResult').innerHTML = '';
+                        }, 500);
+                        
+                        currentEducationDepartmentsPage = 1;
+                        await loadEducationDepartments(1);
                     } else {
                         resultDiv.innerHTML = `<div class="alert alert-danger">${response.message || 'Ошибка сохранения.'}</div>`;
                     }
@@ -197,16 +289,18 @@
             });
         });
 
-        async function loadEducationDepartments() {
-            console.log('loadEducationDepartments: начало выполнения');
+        async function loadEducationDepartments(page = 1) {
+            console.log('loadEducationDepartments: начало выполнения, страница:', page);
             try {
-                if (typeof api === 'undefined') {
+                if (typeof window.api === 'undefined') {
                     console.error('API не определен в loadEducationDepartments! Создаем новый экземпляр...');
                     window.api = new ApiClient();
                 }
-                console.log('loadEducationDepartments: отправляем запрос к API');
-                const response = await api.get('/api/educationdepartments');
+                console.log('loadEducationDepartments: отправляем запрос к API /educationdepartments');
+                const response = await window.api.get('/educationdepartments');
                 console.log('loadEducationDepartments: получен ответ:', response);
+                console.log('loadEducationDepartments: success =', response.success);
+                console.log('loadEducationDepartments: data length =', response.data ? response.data.length : 'undefined');
                 
                 const tableBody = document.getElementById('educationDepartmentsTableBody');
                 const selectElement = document.getElementById('selectedEducationDepartment');
@@ -217,13 +311,24 @@
 
                 if (response.success && response.data.length > 0) {
                     console.log('loadEducationDepartments: обрабатываем данные, количество:', response.data.length);
+                    
+                    // Сохраняем все данные для пагинации
+                    allEducationDepartments = response.data;
+                    
                     // Обновляем счетчик УО
                     const uoCountElement = document.getElementById('uoCount');
                     if (uoCountElement) {
                         uoCountElement.textContent = `УО: ${response.data.length}`;
                     }
                     
-                    response.data.forEach(dep => {
+                    // Вычисляем пагинацию
+                    const totalPages = Math.ceil(response.data.length / itemsPerPage);
+                    const startIndex = (page - 1) * itemsPerPage;
+                    const endIndex = Math.min(startIndex + itemsPerPage, response.data.length);
+                    const pageData = response.data.slice(startIndex, endIndex);
+                    
+                    // Отображаем данные для текущей страницы
+                    pageData.forEach(dep => {
                         console.log('loadEducationDepartments: добавляем строку для УО:', dep.name);
                         const row = tableBody.insertRow();
                         row.insertCell().textContent = dep.name;
@@ -250,6 +355,9 @@
                         option.textContent = `${dep.name} (${dep.city || 'Без города'})`;
                         selectElement.appendChild(option);
                     });
+                    
+                    // Обновляем пагинацию
+                    updateEducationDepartmentsPagination(page, totalPages);
                 } else {
                     console.log('loadEducationDepartments: нет данных или ошибка в ответе');
                     tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Нет данных об УО.</td></tr>';
@@ -258,6 +366,8 @@
                     if (uoCountElement) {
                         uoCountElement.textContent = 'УО: 0';
                     }
+                    // Очищаем пагинацию
+                    document.getElementById('educationDepartmentsPagination').innerHTML = '';
                 }
             } catch (error) {
                 console.error('Ошибка при загрузке УО:', error);
@@ -265,7 +375,139 @@
             }
         }
 
+        // Функция для обновления пагинации УО
+        function updateEducationDepartmentsPagination(currentPage, totalPages) {
+            const pagination = document.getElementById('educationDepartmentsPagination');
+            pagination.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            // Кнопка "Предыдущая"
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            const prevLink = document.createElement('a');
+            prevLink.className = 'page-link';
+            prevLink.href = '#';
+            prevLink.textContent = 'Предыдущая';
+            prevLink.onclick = (e) => {
+                e.preventDefault();
+                if (currentPage > 1) {
+                    currentEducationDepartmentsPage = currentPage - 1;
+                    loadEducationDepartments(currentEducationDepartmentsPage);
+                }
+            };
+            prevLi.appendChild(prevLink);
+            pagination.appendChild(prevLi);
+
+            // Номера страниц
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const li = document.createElement('li');
+                li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                const link = document.createElement('a');
+                link.className = 'page-link';
+                link.href = '#';
+                link.textContent = i;
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    currentEducationDepartmentsPage = i;
+                    loadEducationDepartments(currentEducationDepartmentsPage);
+                };
+                li.appendChild(link);
+                pagination.appendChild(li);
+            }
+
+            // Кнопка "Следующая"
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            const nextLink = document.createElement('a');
+            nextLink.className = 'page-link';
+            nextLink.href = '#';
+            nextLink.textContent = 'Следующая';
+            nextLink.onclick = (e) => {
+                e.preventDefault();
+                if (currentPage < totalPages) {
+                    currentEducationDepartmentsPage = currentPage + 1;
+                    loadEducationDepartments(currentEducationDepartmentsPage);
+                }
+            };
+            nextLi.appendChild(nextLink);
+            pagination.appendChild(nextLi);
+        }
+
+        // Функция для обработки закрытия модального окна
+        function handleModalHidden() {
+            // Очищаем форму при закрытии
+            const form = document.getElementById('educationDepartmentForm');
+            form.reset();
+            document.getElementById('educationDepartmentFormResult').innerHTML = '';
+            
+            // Принудительно удаляем все backdrop элементы
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Восстанавливаем body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            // Дополнительная очистка через небольшую задержку
+            setTimeout(() => {
+                const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+                remainingBackdrops.forEach(backdrop => backdrop.remove());
+                
+                if (document.body.classList.contains('modal-open')) {
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }
+            }, 100);
+        }
+
+        // Функция для обработки закрытия модального окна через кнопку
+        function handleModalClose() {
+            const modalElement = document.getElementById('educationDepartmentModal');
+            
+            // Принудительно закрываем модальное окно
+            modalElement.classList.remove('show');
+            modalElement.style.display = 'none';
+            modalElement.setAttribute('aria-hidden', 'true');
+            modalElement.removeAttribute('aria-modal');
+            
+            // Удаляем backdrop и восстанавливаем body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            // Удаляем все backdrop элементы
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Дополнительная очистка
+            setTimeout(() => {
+                const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+                remainingBackdrops.forEach(backdrop => backdrop.remove());
+                
+                if (document.body.classList.contains('modal-open')) {
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }
+            }, 100);
+        }
+
         function openEducationDepartmentModal(dep = null) {
+            // Очищаем все возможные backdrop элементы перед открытием
+            const existingBackdrops = document.querySelectorAll('.modal-backdrop');
+            existingBackdrops.forEach(backdrop => backdrop.remove());
+            
+            // Восстанавливаем body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
             const modalLabel = document.getElementById('educationDepartmentModalLabel');
             const form = document.getElementById('educationDepartmentForm');
             form.reset();
@@ -280,13 +522,20 @@
                 document.getElementById('educationDepartmentPhone').value = dep.phone || '';
                 document.getElementById('educationDepartmentEmail').value = dep.email || '';
                 document.getElementById('educationDepartmentDirector').value = dep.directorName || '';
-                document.getElementById('educationDepartmentIsActive').checked = dep.isActive;
             } else {
                 modalLabel.textContent = 'Добавить УО';
                 document.getElementById('educationDepartmentId').value = '';
-                document.getElementById('educationDepartmentIsActive').checked = true; // Default to active
             }
-            const modal = new bootstrap.Modal(document.getElementById('educationDepartmentModal'));
+            
+            const modalElement = document.getElementById('educationDepartmentModal');
+            
+            // Удаляем старые обработчики событий
+            modalElement.removeEventListener('hidden.bs.modal', handleModalHidden);
+            
+            // Добавляем обработчик для правильного закрытия модального окна
+            modalElement.addEventListener('hidden.bs.modal', handleModalHidden);
+            
+            const modal = new bootstrap.Modal(modalElement);
             modal.show();
         }
 
@@ -295,10 +544,11 @@
                 return;
             }
             try {
-                const response = await api.delete(`/api/educationdepartments/${id}`);
+                const response = await window.api.delete(`/educationdepartments/${id}`);
                 if (response.success) {
                     alert(response.message);
-                    await loadEducationDepartments();
+                    currentEducationDepartmentsPage = 1;
+                    await loadEducationDepartments(1);
                 } else {
                     alert(response.message || 'Ошибка удаления УО.');
                 }
@@ -308,35 +558,338 @@
             }
         }
 
-        async function loadOrganizationsForSelectedDepartment() {
+        async function loadOrganizationsForSelectedDepartment(page = 1) {
             const educationDepartmentId = document.getElementById('selectedEducationDepartment').value;
             const tableBody = document.getElementById('organizationsTableBody');
+            const addOrganizationBtn = document.getElementById('addOrganizationBtn');
+            
             tableBody.innerHTML = ''; // Clear previous data
 
             if (!educationDepartmentId) {
-                tableBody.innerHTML = '<tr><td colspan="4" class="text-center">Выберите УО для просмотра организаций.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Выберите УО для просмотра организаций.</td></tr>';
+                addOrganizationBtn.disabled = true;
+                document.getElementById('organizationsPagination').innerHTML = '';
                 return;
             }
 
+            // Активируем кнопку добавления организации
+            addOrganizationBtn.disabled = false;
+
             try {
-                const response = await api.get(`/api/educationdepartments/${educationDepartmentId}/organizations`);
+                const response = await window.api.get(`/stores/by-education-department/${educationDepartmentId}`);
                 if (response.success && response.data.length > 0) {
-                    response.data.forEach(org => {
+                    // Сохраняем все данные для пагинации
+                    allOrganizations = response.data;
+                    
+                    // Вычисляем пагинацию
+                    const totalPages = Math.ceil(response.data.length / itemsPerPage);
+                    const startIndex = (page - 1) * itemsPerPage;
+                    const endIndex = Math.min(startIndex + itemsPerPage, response.data.length);
+                    const pageData = response.data.slice(startIndex, endIndex);
+                    
+                    // Отображаем данные для текущей страницы
+                    pageData.forEach(org => {
                         const row = tableBody.insertRow();
                         row.insertCell().textContent = org.name;
                         row.insertCell().textContent = org.city || '';
                         row.insertCell().textContent = org.address || '';
+                        row.insertCell().textContent = org.phone || '';
+                        row.insertCell().textContent = org.manager || '';
+                        
                         const actionsCell = row.insertCell();
-                        // Add actions for organizations if needed (e.g., edit, view details)
-                        actionsCell.textContent = 'Действия...'; // Placeholder
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'btn btn-sm btn-info me-2';
+                        editBtn.textContent = 'Редактировать';
+                        editBtn.onclick = () => openOrganizationModal(org);
+                        actionsCell.appendChild(editBtn);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'btn btn-sm btn-danger';
+                        deleteBtn.textContent = 'Удалить';
+                        deleteBtn.onclick = () => deleteOrganization(org.id);
+                        actionsCell.appendChild(deleteBtn);
                     });
+                    
+                    // Обновляем пагинацию
+                    updateOrganizationsPagination(page, totalPages);
                 } else {
-                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center">Нет организаций, привязанных к этому УО.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Нет организаций, привязанных к этому УО.</td></tr>';
+                    document.getElementById('organizationsPagination').innerHTML = '';
                 }
             } catch (error) {
                 console.error('Ошибка при загрузке организаций для УО:', error);
-                tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Ошибка загрузки организаций.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Ошибка загрузки организаций.</td></tr>';
             }
         }
+
+        // Функция для обновления пагинации организаций
+        function updateOrganizationsPagination(currentPage, totalPages) {
+            const pagination = document.getElementById('organizationsPagination');
+            pagination.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            // Кнопка "Предыдущая"
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            const prevLink = document.createElement('a');
+            prevLink.className = 'page-link';
+            prevLink.href = '#';
+            prevLink.textContent = 'Предыдущая';
+            prevLink.onclick = (e) => {
+                e.preventDefault();
+                if (currentPage > 1) {
+                    currentOrganizationsPage = currentPage - 1;
+                    loadOrganizationsForSelectedDepartment(currentOrganizationsPage);
+                }
+            };
+            prevLi.appendChild(prevLink);
+            pagination.appendChild(prevLi);
+
+            // Номера страниц
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const li = document.createElement('li');
+                li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                const link = document.createElement('a');
+                link.className = 'page-link';
+                link.href = '#';
+                link.textContent = i;
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    currentOrganizationsPage = i;
+                    loadOrganizationsForSelectedDepartment(currentOrganizationsPage);
+                };
+                li.appendChild(link);
+                pagination.appendChild(li);
+            }
+
+            // Кнопка "Следующая"
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            const nextLink = document.createElement('a');
+            nextLink.className = 'page-link';
+            nextLink.href = '#';
+            nextLink.textContent = 'Следующая';
+            nextLink.onclick = (e) => {
+                e.preventDefault();
+                if (currentPage < totalPages) {
+                    currentOrganizationsPage = currentPage + 1;
+                    loadOrganizationsForSelectedDepartment(currentOrganizationsPage);
+                }
+            };
+            nextLi.appendChild(nextLink);
+            pagination.appendChild(nextLi);
+        }
+
+        // Функции для работы с организациями
+        function openOrganizationModal(org = null) {
+            const educationDepartmentId = document.getElementById('selectedEducationDepartment').value;
+            if (!educationDepartmentId) {
+                alert('Сначала выберите УО');
+                return;
+            }
+
+            // Очищаем все возможные backdrop элементы перед открытием
+            const existingBackdrops = document.querySelectorAll('.modal-backdrop');
+            existingBackdrops.forEach(backdrop => backdrop.remove());
+            
+            // Восстанавливаем body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            const modalLabel = document.getElementById('organizationModalLabel');
+            const form = document.getElementById('organizationForm');
+            form.reset();
+            document.getElementById('organizationFormResult').innerHTML = '';
+
+            // Устанавливаем ID выбранного УО
+            document.getElementById('organizationEducationDepartmentId').value = educationDepartmentId;
+
+            if (org) {
+                modalLabel.textContent = 'Редактировать организацию';
+                document.getElementById('organizationId').value = org.id;
+                document.getElementById('organizationName').value = org.name;
+                document.getElementById('organizationCity').value = org.city || '';
+                document.getElementById('organizationAddress').value = org.address || '';
+                document.getElementById('organizationPhone').value = org.phone || '';
+                document.getElementById('organizationEmail').value = org.manager || '';
+            } else {
+                modalLabel.textContent = 'Добавить организацию';
+                document.getElementById('organizationId').value = '';
+            }
+            
+            const modalElement = document.getElementById('organizationModal');
+            
+            // Удаляем старые обработчики событий
+            modalElement.removeEventListener('hidden.bs.modal', handleOrganizationModalHidden);
+            
+            // Добавляем обработчик для правильного закрытия модального окна
+            modalElement.addEventListener('hidden.bs.modal', handleOrganizationModalHidden);
+            
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        }
+
+        function handleOrganizationModalHidden() {
+            // Очищаем форму при закрытии
+            const form = document.getElementById('organizationForm');
+            form.reset();
+            document.getElementById('organizationFormResult').innerHTML = '';
+            
+            // Принудительно удаляем все backdrop элементы
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Восстанавливаем body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            // Дополнительная очистка через небольшую задержку
+            setTimeout(() => {
+                const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+                remainingBackdrops.forEach(backdrop => backdrop.remove());
+                
+                if (document.body.classList.contains('modal-open')) {
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }
+            }, 100);
+        }
+
+        function handleOrganizationModalClose() {
+            const modalElement = document.getElementById('organizationModal');
+            
+            // Принудительно закрываем модальное окно
+            modalElement.classList.remove('show');
+            modalElement.style.display = 'none';
+            modalElement.setAttribute('aria-hidden', 'true');
+            modalElement.removeAttribute('aria-modal');
+            
+            // Удаляем backdrop и восстанавливаем body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            // Удаляем все backdrop элементы
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Дополнительная очистка
+            setTimeout(() => {
+                const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+                remainingBackdrops.forEach(backdrop => backdrop.remove());
+                
+                if (document.body.classList.contains('modal-open')) {
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                }
+            }, 100);
+        }
+
+        async function deleteOrganization(id) {
+            if (!confirm('Вы уверены, что хотите удалить эту организацию?')) {
+                return;
+            }
+            try {
+                const response = await window.api.delete(`/stores/${id}`);
+                if (response.success) {
+                    alert(response.message);
+                    currentOrganizationsPage = 1;
+                    await loadOrganizationsForSelectedDepartment(1);
+                } else {
+                    alert(response.message || 'Ошибка удаления организации.');
+                }
+            } catch (error) {
+                console.error('Ошибка удаления организации:', error);
+                alert('Произошла ошибка при удалении организации.');
+            }
+        }
+
+        // Добавляем обработчик формы для организаций
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('organizationForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const id = document.getElementById('organizationId').value;
+                const educationDepartmentId = document.getElementById('organizationEducationDepartmentId').value;
+                const name = document.getElementById('organizationName').value;
+                const city = document.getElementById('organizationCity').value;
+                const address = document.getElementById('organizationAddress').value;
+                const phone = document.getElementById('organizationPhone').value;
+                const email = document.getElementById('organizationEmail').value;
+                const resultDiv = document.getElementById('organizationFormResult');
+
+                const payload = { 
+                    name, 
+                    city, 
+                    address, 
+                    phone, 
+                    manager: email, // Используем поле email как manager
+                    educationDepartmentId: parseInt(educationDepartmentId),
+                    isActive: true 
+                };
+                console.log('Отправляем данные организации:', payload);
+
+                try {
+                    if (typeof window.api === 'undefined') {
+                        console.error('API не определен в обработчике формы организации! Создаем новый экземпляр...');
+                        window.api = new ApiClient();
+                    }
+                    
+                    let response;
+                    if (id) {
+                        console.log('Обновляем организацию с ID:', id);
+                        response = await window.api.put(`/stores/${id}`, payload);
+                    } else {
+                        console.log('Создаем новую организацию');
+                        response = await window.api.post('/stores', payload);
+                    }
+                    console.log('Получен ответ:', response);
+
+                    if (response.success) {
+                        resultDiv.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
+                        
+                        // Закрываем модальное окно правильно
+                        const modalElement = document.getElementById('organizationModal');
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        
+                        // Принудительно закрываем модальное окно
+                        modalElement.classList.remove('show');
+                        modalElement.style.display = 'none';
+                        modalElement.setAttribute('aria-hidden', 'true');
+                        modalElement.removeAttribute('aria-modal');
+                        
+                        // Удаляем backdrop и восстанавливаем body
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                        
+                        // Удаляем все backdrop элементы
+                        const backdrops = document.querySelectorAll('.modal-backdrop');
+                        backdrops.forEach(backdrop => backdrop.remove());
+                        
+                        // Очищаем форму после успешного сохранения
+                        setTimeout(() => {
+                            document.getElementById('organizationForm').reset();
+                            document.getElementById('organizationFormResult').innerHTML = '';
+                        }, 500);
+                        
+                        currentOrganizationsPage = 1;
+                    await loadOrganizationsForSelectedDepartment(1);
+                    } else {
+                        resultDiv.innerHTML = `<div class="alert alert-danger">${response.message || 'Ошибка сохранения организации.'}</div>`;
+                    }
+                } catch (error) {
+                    console.error('Ошибка сохранения организации:', error);
+                    resultDiv.innerHTML = `<div class="alert alert-danger">Произошла ошибка: ${error.message || 'Неизвестная ошибка.'}</div>`;
+                }
+            });
+        });
     </script>
 }

@@ -1,18 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using ExchangeSystem.Services;
+using ExchangeSystem.Data;
+using ExchangeSystem.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExchangeSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class DataController : ControllerBase
     {
         private readonly IProductService _productService;
         private readonly IStoreService _storeService;
         private readonly ITransactionService _transactionService;
         private readonly IDataJoinService _dataJoinService;
+        private readonly ExchangeDbContext _context;
         private readonly ILogger<DataController> _logger;
 
         public DataController(
@@ -20,12 +23,14 @@ namespace ExchangeSystem.Controllers
             IStoreService storeService,
             ITransactionService transactionService,
             IDataJoinService dataJoinService,
+            ExchangeDbContext context,
             ILogger<DataController> logger)
         {
             _productService = productService;
             _storeService = storeService;
             _transactionService = transactionService;
             _dataJoinService = dataJoinService;
+            _context = context;
             _logger = logger;
         }
 
@@ -82,6 +87,255 @@ namespace ExchangeSystem.Controllers
             {
                 _logger.LogError(ex, "Error getting transactions");
                 return StatusCode(500, new { success = false, message = "Ошибка при получении транзакций" });
+            }
+        }
+
+        [HttpGet("consumption")]
+        public async Task<IActionResult> GetConsumptionData(
+            [FromQuery] int? organizationId,
+            [FromQuery] DateTime? date,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to)
+        {
+            try
+            {
+                if (!organizationId.HasValue)
+                {
+                    return BadRequest(new { success = false, message = "Необходимо указать organizationId" });
+                }
+
+                var query = _context.ProductConsumptions
+                    .Include(pc => pc.Product)
+                    .Where(pc => pc.OrganizationId == organizationId.Value);
+
+                if (date.HasValue)
+                {
+                    var targetDate = DateTime.SpecifyKind(date.Value, DateTimeKind.Utc);
+                    query = query.Where(pc => pc.ConsumptionDate.Date == targetDate.Date);
+                }
+                else if (from.HasValue || to.HasValue)
+                {
+                    if (from.HasValue)
+                    {
+                        var f = DateTime.SpecifyKind(from.Value, DateTimeKind.Utc);
+                        query = query.Where(pc => pc.ConsumptionDate >= f);
+                    }
+                    if (to.HasValue)
+                    {
+                        var t = DateTime.SpecifyKind(to.Value, DateTimeKind.Utc);
+                        query = query.Where(pc => pc.ConsumptionDate <= t);
+                    }
+                }
+
+                var items = await query
+                    .OrderBy(pc => pc.ConsumptionDate)
+                    .ToListAsync();
+
+                // Получаем сопоставления СВС
+                var productIds = items.Select(i => i.ProductId).Distinct().ToList();
+                var svsMappings = await _context.OrganizationProducts
+                    .Where(op => op.OrganizationId == organizationId.Value && productIds.Contains(op.ProductId))
+                    .ToDictionaryAsync(op => op.ProductId, op => op.SvsCode);
+
+                var result = items.Select(i => new
+                {
+                    id = i.Id,
+                    date = i.ConsumptionDate,
+                    productId = i.ProductId,
+                    productName = i.ProductName,
+                    productCode = i.Product?.Code ?? "",
+                    unit = i.Unit,
+                    quantity = i.Quantity,
+                    price = i.Price,
+                    totalCost = i.TotalCost,
+                    categoryId = i.CategoryId,
+                    categoryName = i.CategoryName,
+                    svsCode = svsMappings.TryGetValue(i.ProductId, out var code) ? code : i.Product?.SvsCode
+                }).ToList();
+
+                return Ok(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting consumption data");
+                return StatusCode(500, new { success = false, message = "Ошибка при получении данных расхода" });
+            }
+        }
+
+        [HttpGet("receipts")]
+        public async Task<IActionResult> GetReceiptData(
+            [FromQuery] int? organizationId,
+            [FromQuery] DateTime? date,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to)
+        {
+            try
+            {
+                if (!organizationId.HasValue)
+                {
+                    return BadRequest(new { success = false, message = "Необходимо указать organizationId" });
+                }
+
+                var query = _context.ProductReceipts
+                    .Include(pr => pr.Product)
+                    .Where(pr => pr.OrganizationId == organizationId.Value);
+
+                if (date.HasValue)
+                {
+                    var targetDate = DateTime.SpecifyKind(date.Value, DateTimeKind.Utc);
+                    query = query.Where(pr => pr.ReceiptDate.Date == targetDate.Date);
+                }
+                else if (from.HasValue || to.HasValue)
+                {
+                    if (from.HasValue)
+                    {
+                        var f = DateTime.SpecifyKind(from.Value, DateTimeKind.Utc);
+                        query = query.Where(pr => pr.ReceiptDate >= f);
+                    }
+                    if (to.HasValue)
+                    {
+                        var t = DateTime.SpecifyKind(to.Value, DateTimeKind.Utc);
+                        query = query.Where(pr => pr.ReceiptDate <= t);
+                    }
+                }
+
+                var items = await query
+                    .OrderBy(pr => pr.ReceiptDate)
+                    .ToListAsync();
+
+                // Получаем сопоставления СВС
+                var productIds = items.Select(i => i.ProductId).Distinct().ToList();
+                var svsMappings = await _context.OrganizationProducts
+                    .Where(op => op.OrganizationId == organizationId.Value && productIds.Contains(op.ProductId))
+                    .ToDictionaryAsync(op => op.ProductId, op => op.SvsCode);
+
+                var result = items.Select(i => new
+                {
+                    id = i.Id,
+                    date = i.ReceiptDate,
+                    documentNumber = i.DocumentNumber,
+                    supplierName = i.SupplierName,
+                    supplierUnp = i.SupplierUnp,
+                    contractDate = i.ContractDate,
+                    contractNumber = i.ContractNumber,
+                    productId = i.ProductId,
+                    productName = i.ProductName,
+                    productCode = i.Product?.Code ?? "",
+                    unit = i.Unit,
+                    quantity = i.Quantity,
+                    price = i.Price,
+                    totalCost = i.TotalCost,
+                    svsCode = svsMappings.TryGetValue(i.ProductId, out var code) ? code : i.Product?.SvsCode
+                }).ToList();
+
+                return Ok(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting receipt data");
+                return StatusCode(500, new { success = false, message = "Ошибка при получении данных прихода" });
+            }
+        }
+
+        [HttpPut("consumption/{id}/svs-code")]
+        public async Task<IActionResult> UpdateConsumptionSvsCode(int id, [FromBody] UpdateSvsCodeRequest request)
+        {
+            try
+            {
+                var consumption = await _context.ProductConsumptions
+                    .Include(pc => pc.Product)
+                    .FirstOrDefaultAsync(pc => pc.Id == id);
+
+                if (consumption == null)
+                {
+                    return NotFound(new { success = false, message = "Запись расхода не найдена" });
+                }
+
+                // Сохраняем сопоставление в OrganizationProducts
+                if (consumption.OrganizationId.HasValue)
+                {
+                    var orgProduct = await _context.OrganizationProducts
+                        .FirstOrDefaultAsync(op => op.OrganizationId == consumption.OrganizationId.Value && op.ProductId == consumption.ProductId);
+
+                    if (orgProduct != null)
+                    {
+                        orgProduct.SvsCode = request.SvsCode;
+                        orgProduct.UpdatedAt = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        orgProduct = new OrganizationProduct
+                        {
+                            OrganizationId = consumption.OrganizationId.Value,
+                            ProductId = consumption.ProductId,
+                            SvsCode = request.SvsCode,
+                            IsActive = true,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        _context.OrganizationProducts.Add(orgProduct);
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+
+                return Ok(new { success = true, message = "Код СВС обновлен" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating consumption SVS code");
+                return StatusCode(500, new { success = false, message = "Ошибка при обновлении кода СВС" });
+            }
+        }
+
+        [HttpPut("receipts/{id}/svs-code")]
+        public async Task<IActionResult> UpdateReceiptSvsCode(int id, [FromBody] UpdateSvsCodeRequest request)
+        {
+            try
+            {
+                var receipt = await _context.ProductReceipts
+                    .Include(pr => pr.Product)
+                    .FirstOrDefaultAsync(pr => pr.Id == id);
+
+                if (receipt == null)
+                {
+                    return NotFound(new { success = false, message = "Запись прихода не найдена" });
+                }
+
+                // Сохраняем сопоставление в OrganizationProducts
+                if (receipt.OrganizationId.HasValue)
+                {
+                    var orgProduct = await _context.OrganizationProducts
+                        .FirstOrDefaultAsync(op => op.OrganizationId == receipt.OrganizationId.Value && op.ProductId == receipt.ProductId);
+
+                    if (orgProduct != null)
+                    {
+                        orgProduct.SvsCode = request.SvsCode;
+                        orgProduct.UpdatedAt = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        orgProduct = new OrganizationProduct
+                        {
+                            OrganizationId = receipt.OrganizationId.Value,
+                            ProductId = receipt.ProductId,
+                            SvsCode = request.SvsCode,
+                            IsActive = true,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        _context.OrganizationProducts.Add(orgProduct);
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+
+                return Ok(new { success = true, message = "Код СВС обновлен" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating receipt SVS code");
+                return StatusCode(500, new { success = false, message = "Ошибка при обновлении кода СВС" });
             }
         }
 
@@ -295,5 +549,10 @@ namespace ExchangeSystem.Controllers
                 return StatusCode(500, new { success = false, message = "Ошибка при удалении магазина" });
             }
         }
+    }
+
+    public class UpdateSvsCodeRequest
+    {
+        public string? SvsCode { get; set; }
     }
 }

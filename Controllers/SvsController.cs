@@ -209,8 +209,7 @@ namespace ExchangeSystem.Controllers
                 _logger.LogError(ex, "Ошибка при получении обновлений СВС");
                 return StatusCode(500, new { success = false, message = "Внутренняя ошибка сервера" });
             }
-        }
-    }
+        }    }
 
     public class SaveMappingRequest
     {
@@ -238,3 +237,4 @@ namespace ExchangeSystem.Controllers
         public string? UpdateSource { get; set; } = "Manual";
     }
 }
+

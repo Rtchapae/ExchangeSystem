@@ -3,6 +3,7 @@ using System;
 using ExchangeSystem.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ExchangeSystem.Migrations
 {
     [DbContext(typeof(ExchangeDbContext))]
-    partial class ExchangeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251027000054_AddSvsMaterialsTable")]
+    partial class AddSvsMaterialsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -61,31 +64,31 @@ namespace ExchangeSystem.Migrations
                         {
                             Id = 1,
                             Code = "NURSERY",
-                            CreatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1711),
+                            CreatedAt = new DateTime(2025, 10, 27, 0, 0, 53, 289, DateTimeKind.Utc).AddTicks(9413),
                             Description = "Дети ясельного возраста",
                             IsActive = true,
                             Name = "Ясли 10,5",
-                            UpdatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1702)
+                            UpdatedAt = new DateTime(2025, 10, 27, 0, 0, 53, 289, DateTimeKind.Utc).AddTicks(9407)
                         },
                         new
                         {
                             Id = 2,
                             Code = "KINDERGARTEN",
-                            CreatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1716),
+                            CreatedAt = new DateTime(2025, 10, 27, 0, 0, 53, 289, DateTimeKind.Utc).AddTicks(9417),
                             Description = "Дети дошкольного возраста",
                             IsActive = true,
                             Name = "САД 10,5",
-                            UpdatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1714)
+                            UpdatedAt = new DateTime(2025, 10, 27, 0, 0, 53, 289, DateTimeKind.Utc).AddTicks(9415)
                         },
                         new
                         {
                             Id = 3,
                             Code = "STAFF",
-                            CreatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1722),
+                            CreatedAt = new DateTime(2025, 10, 27, 0, 0, 53, 289, DateTimeKind.Utc).AddTicks(9426),
                             Description = "Персонал учреждения",
                             IsActive = true,
                             Name = "Сотрудники",
-                            UpdatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1719)
+                            UpdatedAt = new DateTime(2025, 10, 27, 0, 0, 53, 289, DateTimeKind.Utc).AddTicks(9425)
                         });
                 });
 
@@ -351,9 +354,6 @@ namespace ExchangeSystem.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("EducationDepartmentId")
-                        .HasColumnType("integer");
-
                     b.Property<decimal?>("KindergartenCost")
                         .HasColumnType("decimal(18,2)");
 
@@ -369,9 +369,6 @@ namespace ExchangeSystem.Migrations
 
                     b.Property<decimal?>("NurseryQuantity")
                         .HasColumnType("decimal(15,3)");
-
-                    b.Property<int?>("OrganizationId")
-                        .HasColumnType("integer");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -408,8 +405,6 @@ namespace ExchangeSystem.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("ConsumptionDate");
-
-                    b.HasIndex("OrganizationId");
 
                     b.HasIndex("ProductId");
 
@@ -501,26 +496,20 @@ namespace ExchangeSystem.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ContractNumber")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DocumentNumber")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int?>("EducationDepartmentId")
-                        .HasColumnType("integer");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
-
-                    b.Property<int?>("OrganizationId")
-                        .HasColumnType("integer");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -561,8 +550,6 @@ namespace ExchangeSystem.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DocumentNumber");
-
-                    b.HasIndex("OrganizationId");
 
                     b.HasIndex("ProductId");
 
@@ -881,12 +868,12 @@ namespace ExchangeSystem.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(362),
+                            CreatedAt = new DateTime(2025, 10, 27, 0, 0, 53, 289, DateTimeKind.Utc).AddTicks(6809),
                             Email = "admin@exchangesystem.com",
                             FullName = "Администратор системы",
                             IsActive = true,
-                            LastLoginAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(371),
-                            PasswordHash = "$2a$11$7q.MawpzxRtQWdx/jAORju0C2n8o3NvHaoXdPpShtc92j0wP6ZASu",
+                            LastLoginAt = new DateTime(2025, 10, 27, 0, 0, 53, 289, DateTimeKind.Utc).AddTicks(6834),
+                            PasswordHash = "$2a$11$uzAqy.C1zd08y/XuteeyBeZBP6dSQzP.XnqgstnRwWIDcEj5Y/aIu",
                             Role = "Admin",
                             Username = "admin"
                         });
@@ -930,11 +917,6 @@ namespace ExchangeSystem.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ExchangeSystem.Models.Store", "Organization")
-                        .WithMany()
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("ExchangeSystem.Models.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
@@ -942,8 +924,6 @@ namespace ExchangeSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
-
-                    b.Navigation("Organization");
 
                     b.Navigation("Product");
                 });
@@ -960,18 +940,11 @@ namespace ExchangeSystem.Migrations
 
             modelBuilder.Entity("ExchangeSystem.Models.ProductReceipt", b =>
                 {
-                    b.HasOne("ExchangeSystem.Models.Store", "Organization")
-                        .WithMany()
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("ExchangeSystem.Models.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Organization");
 
                     b.Navigation("Product");
                 });

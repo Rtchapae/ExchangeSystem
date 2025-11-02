@@ -10,6 +10,7 @@ namespace ExchangeSystem.Services
         Task<Store> UpdateStoreAsync(Store store);
         Task<bool> DeleteStoreAsync(int id);
         Task<List<Store>> SearchStoresAsync(string searchTerm);
+        Task<List<Store>> GetStoresByEducationDepartmentAsync(int educationDepartmentId);
     }
 }
 

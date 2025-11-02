@@ -15,9 +15,9 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-primary border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                <span class="navbar-brand">
                     <i class="fas fa-exchange-alt me-2"></i>Система обмена данными
-                </a>
+                </span>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -27,11 +27,6 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Dashboard">
                                 <i class="fas fa-tachometer-alt me-1"></i>Главная
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="SvsCatalog">
-                                <i class="fas fa-list me-1"></i>Справочник СВС
                             </a>
                         </li>
                         <li class="nav-item">
@@ -127,10 +122,25 @@
             if (userNav) userNav.style.display = 'none';
         }
         
-        function logout() {
+        async function logout() {
+            try {
+                // Вызываем API logout
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (error) {
+                console.error('Logout API error:', error);
+            }
+            
+            // Очищаем локальное хранилище
             localStorage.removeItem('authToken');
             localStorage.removeItem('username');
-            window.location.href = '/Home/Login';
+            
+            // Перенаправляем на страницу входа
+            window.location.href = '/Auth/Login';
         }
     </script>
 </body>

@@ -19,9 +19,15 @@
                                 <div class="card-body">
                                     <form id="consumptionImportForm" enctype="multipart/form-data">
                                         <div class="mb-3">
+                                            <label for="consumptionEducationDepartment" class="form-label">УО *</label>
+                                            <select class="form-select" id="consumptionEducationDepartment" onchange="loadOrganizationsForEducationDepartment('consumption')" required>
+                                                <option value="">Выберите УО</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
                                             <label for="consumptionOrganization" class="form-label">Организация *</label>
-                                            <select class="form-select" id="consumptionOrganization" required>
-                                                <option value="">Выберите организацию</option>
+                                            <select class="form-select" id="consumptionOrganization" required disabled>
+                                                <option value="">Сначала выберите УО</option>
                                             </select>
                                         </div>
                                         <div class="mb-3">
@@ -59,9 +65,15 @@
                                 <div class="card-body">
                                     <form id="receiptsImportForm" enctype="multipart/form-data">
                                         <div class="mb-3">
+                                            <label for="receiptsEducationDepartment" class="form-label">УО *</label>
+                                            <select class="form-select" id="receiptsEducationDepartment" onchange="loadOrganizationsForEducationDepartment('receipts')" required>
+                                                <option value="">Выберите УО</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
                                             <label for="receiptsOrganization" class="form-label">Организация *</label>
-                                            <select class="form-select" id="receiptsOrganization" required>
-                                                <option value="">Выберите организацию</option>
+                                            <select class="form-select" id="receiptsOrganization" required disabled>
+                                                <option value="">Сначала выберите УО</option>
                                             </select>
                                         </div>
                                         <div class="mb-3">
@@ -80,14 +92,20 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="card-title">Импорт DBF файлов</h5>
+                                    <h5 class="card-title">Импорт DBF расхода</h5>
                                 </div>
                                 <div class="card-body">
                                     <form id="dbfImportForm" enctype="multipart/form-data">
                                         <div class="mb-3">
+                                            <label for="dbfEducationDepartment" class="form-label">УО *</label>
+                                            <select class="form-select" id="dbfEducationDepartment" onchange="loadOrganizationsForEducationDepartment('dbf')" required>
+                                                <option value="">Выберите УО</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
                                             <label for="dbfOrganization" class="form-label">Организация *</label>
-                                            <select class="form-select" id="dbfOrganization" required>
-                                                <option value="">Выберите организацию</option>
+                                            <select class="form-select" id="dbfOrganization" required disabled>
+                                                <option value="">Сначала выберите УО</option>
                                             </select>
                                         </div>
                                         <div class="mb-3">
@@ -95,9 +113,69 @@
                                             <input type="file" class="form-control" id="dbfFile" accept=".dbf,.xls,.xlsx" required>
                                             <small class="text-muted">Поддерживаются файлы DBF, XLS, XLSX</small>
                                         </div>
-                                        <button type="submit" class="btn btn-warning">Импортировать DBF</button>
+                                        <button type="submit" class="btn btn-warning">Импортировать DBF расход</button>
                                     </form>
                                     <div id="dbfResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Импорт DBF прихода</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="dbfReceiptsForm" enctype="multipart/form-data">
+                                        <div class="mb-3">
+                                            <label for="dbfReceiptsEducationDepartment" class="form-label">УО *</label>
+                                            <select class="form-select" id="dbfReceiptsEducationDepartment" onchange="loadOrganizationsForEducationDepartment('dbfReceipts')" required>
+                                                <option value="">Выберите УО</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dbfReceiptsOrganization" class="form-label">Организация *</label>
+                                            <select class="form-select" id="dbfReceiptsOrganization" required disabled>
+                                                <option value="">Сначала выберите УО</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dbfReceiptsFile" class="form-label">Выберите DBF файл</label>
+                                            <input type="file" class="form-control" id="dbfReceiptsFile" accept=".dbf,.xls,.xlsx" required>
+                                            <small class="text-muted">Поддерживаются файлы DBF, XLS, XLSX</small>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning">Импортировать DBF приход</button>
+                                    </form>
+                                    <div id="dbfReceiptsResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                                <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Импорт JSON файлов (СВС)</h5>
+                                </div>
+                                <div class="card-body">
+                   <form id="jsonImportForm" enctype="multipart/form-data">
+                       <div class="mb-3">
+                           <label for="jsonEducationDepartment" class="form-label">УО *</label>
+                           <select class="form-select" id="jsonEducationDepartment" onchange="loadOrganizationsForEducationDepartment('json')" required>
+                               <option value="">Выберите УО</option>
+                           </select>
+                       </div>
+                       <div class="mb-3">
+                           <label for="jsonOrganization" class="form-label">Организация (опционально)</label>
+                           <select class="form-select" id="jsonOrganization" disabled>
+                               <option value="">Сначала выберите УО</option>
+                           </select>
+                       </div>
+                       <div class="mb-3">
+                           <label for="jsonFile" class="form-label">Выберите JSON файл</label>
+                           <input type="file" class="form-control" id="jsonFile" accept=".json" required>
+                           <small class="text-muted">Поддерживаются файлы JSON со справочником СВС</small>
+                       </div>
+                       <button type="submit" class="btn btn-info">Импортировать справочник СВС</button>
+                   </form>
+                                    <div id="jsonResult" class="mt-3"></div>
                                 </div>
                             </div>
                         </div>
@@ -181,6 +259,20 @@ curl -X POST \
   http://localhost:5001/api/DataImport/dbf \
   -F "file=@@data.dbf" \
   -F "organizationId=1"</code></pre>
+                        </div>
+                        
+                        <div class="col-md-4">
+           <h6><i class="fas fa-file-code me-2"></i>Импорт JSON файлов (СВС)</h6>
+           <pre class="bg-light p-3 rounded"><code>POST /api/DataImport/json
+Content-Type: multipart/form-data
+
+Параметры:
+- file: JSON файл со справочником СВС
+
+Пример (curl):
+curl -X POST \
+  http://localhost:5001/api/DataImport/json \
+  -F "file=@@svs_catalog.json"</code></pre>
                         </div>
                         
                         <div class="col-md-4">
@@ -277,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Задержка для гарантии загрузки api.js
     setTimeout(function() {
         loadImportHistory();
-        loadOrganizations();
+        loadEducationDepartments();
     }, 100);
     
     // Обработчики форм импорта
@@ -301,50 +393,107 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dbfImportForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const organizationId = document.getElementById('dbfOrganization').value;
-        importData('dbf', 'dbfFile', 'dbfResult', organizationId);
+        importData('dbf/consumption', 'dbfFile', 'dbfResult', organizationId);
     });
+
+    document.getElementById('dbfReceiptsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const organizationId = document.getElementById('dbfReceiptsOrganization').value;
+        importData('dbf/receipts', 'dbfReceiptsFile', 'dbfReceiptsResult', organizationId);
+    });
+    
+        document.getElementById('jsonImportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const educationDepartmentId = document.getElementById('jsonEducationDepartment').value;
+            const organizationId = document.getElementById('jsonOrganization').value;
+            importData('json', 'jsonFile', 'jsonResult', organizationId || null, educationDepartmentId);
+        });
 });
 
-async function loadOrganizations() {
+async function loadEducationDepartments() {
     try {
-        console.log('Загрузка организаций...');
+        console.log('Загрузка УО...');
         
-        // Используем прямой fetch вместо api для надежности
-        const response = await fetch('/api/stores');
+        const response = await fetch('/api/educationdepartments');
         const result = await response.json();
         
-        console.log('Ответ сервера:', result);
+        console.log('Ответ сервера УО:', result);
+        
+        if (result && result.success) {
+            const educationDepartments = result.data;
+            console.log('Найдено УО:', educationDepartments.length);
+            
+            // Заполняем селекты УО
+            const selects = ['consumptionEducationDepartment', 'receiptsEducationDepartment', 'dbfEducationDepartment', 'jsonEducationDepartment'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.innerHTML = '<option value="">Выберите УО</option>';
+                    educationDepartments.forEach(ed => {
+                        const option = document.createElement('option');
+                        option.value = ed.id;
+                        option.textContent = `${ed.name} (${ed.city || 'нет города'})`;
+                        select.appendChild(option);
+                    });
+                    console.log(`Селект УО ${selectId} заполнен, опций:`, select.options.length);
+                } else {
+                    console.error(`Селект УО ${selectId} не найден!`);
+                }
+            });
+        } else {
+            console.error('Ошибка в ответе сервера УО:', result);
+        }
+    } catch (error) {
+        console.error('Ошибка при загрузке УО:', error);
+    }
+}
+
+async function loadOrganizationsForEducationDepartment(formType) {
+    const educationDepartmentId = document.getElementById(`${formType}EducationDepartment`).value;
+    const organizationSelect = document.getElementById(`${formType}Organization`);
+    
+    // Очищаем селект организаций
+    organizationSelect.innerHTML = '<option value="">Загрузка...</option>';
+    organizationSelect.disabled = true;
+    
+    if (!educationDepartmentId) {
+        organizationSelect.innerHTML = '<option value="">Сначала выберите УО</option>';
+        return;
+    }
+    
+    try {
+        console.log(`Загрузка организаций для УО ${educationDepartmentId}...`);
+        
+        const response = await fetch(`/api/stores/by-education-department/${educationDepartmentId}`);
+        const result = await response.json();
+        
+        console.log('Ответ сервера организаций:', result);
         
         if (result && result.success) {
             const organizations = result.data;
             console.log('Найдено организаций:', organizations.length);
             
-            // Заполняем селекты
-            const selects = ['consumptionOrganization', 'receiptsOrganization', 'dbfOrganization'];
-            selects.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                if (select) {
-                    select.innerHTML = '<option value="">Выберите организацию</option>';
-                    organizations.forEach(org => {
-                        const option = document.createElement('option');
-                        option.value = org.id;
-                        option.textContent = `${org.name} (${org.city || 'нет города'})`;
-                        select.appendChild(option);
-                    });
-                    console.log(`Селект ${selectId} заполнен, опций:`, select.options.length);
-                } else {
-                    console.error(`Селект ${selectId} не найден!`);
-                }
+            organizationSelect.innerHTML = '<option value="">Выберите организацию</option>';
+            organizations.forEach(org => {
+                const option = document.createElement('option');
+                option.value = org.id;
+                option.textContent = `${org.name} (${org.city || 'нет города'})`;
+                organizationSelect.appendChild(option);
             });
+            
+            organizationSelect.disabled = false;
+            console.log(`Селект организаций ${formType} заполнен, опций:`, organizationSelect.options.length);
         } else {
-            console.error('Ошибка в ответе сервера:', result);
+            organizationSelect.innerHTML = '<option value="">Ошибка загрузки организаций</option>';
+            console.error('Ошибка в ответе сервера организаций:', result);
         }
     } catch (error) {
         console.error('Ошибка при загрузке организаций:', error);
+        organizationSelect.innerHTML = '<option value="">Ошибка загрузки</option>';
     }
 }
 
-async function importData(type, fileInputId, resultDivId, organizationId = null) {
+async function importData(type, fileInputId, resultDivId, organizationId = null, educationDepartmentId = null) {
     const fileInput = document.getElementById(fileInputId);
     const resultDiv = document.getElementById(resultDivId);
     
@@ -363,6 +512,9 @@ async function importData(type, fileInputId, resultDivId, organizationId = null)
     if (organizationId) {
         formData.append('organizationId', organizationId);
     }
+    if (educationDepartmentId && type === 'json') {
+        formData.append('educationDepartmentId', educationDepartmentId);
+    }
     
     showResult(resultDiv, 'Импорт в процессе...', 'info');
     
@@ -375,14 +527,18 @@ async function importData(type, fileInputId, resultDivId, organizationId = null)
         const data = await response.json();
         
         if (data.success) {
+            // Определяем тип сообщения в зависимости от наличия ошибок
+            const alertType = data.errorRecords > 0 ? 'warning' : 'success';
+            const statusText = data.errorRecords > 0 ? 'Импорт завершен с ошибками' : 'Импорт завершен успешно';
+            
             showResult(resultDiv, 
-                `Импорт завершен успешно!<br>
+                `${statusText}!<br>
                  Организация: ${organizationId ? 'ID ' + organizationId : 'Не указана'}<br>
                  Всего записей: ${data.totalRecords}<br>
                  Обработано: ${data.processedRecords}<br>
                  Успешно: ${data.successRecords}<br>
                  Ошибок: ${data.errorRecords}`, 
-                'success');
+                alertType);
             loadImportHistory();
         } else {
             showResult(resultDiv, 

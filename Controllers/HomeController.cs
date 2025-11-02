@@ -28,10 +28,6 @@ namespace ExchangeSystem.Controllers
             return View();
         }
 
-        public IActionResult Login()
-        {
-            return View();
-        }
 
         public IActionResult Dashboard()
         {
@@ -87,11 +83,6 @@ namespace ExchangeSystem.Controllers
         }
 
         public IActionResult SvsIntegration()
-        {
-            return View();
-        }
-
-        public IActionResult SvsCatalog()
         {
             return View();
         }

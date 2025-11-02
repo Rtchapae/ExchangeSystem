@@ -2,11 +2,18 @@
 class ApiClient {
     constructor() {
         this.baseUrl = '/api';
+        // Определяем базовый URL для запросов
+        this.protocol = window.location.protocol;
+        this.host = window.location.host;
+        this.fullBaseUrl = `${this.protocol}//${this.host}/api`;
     }
 
     async request(endpoint, options = {}) {
-        const token = localStorage.getItem('token');
-        const url = `${this.baseUrl}${endpoint}`;
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        // Используем относительный URL для избежания проблем с портами
+        // Убираем дублирование /api если endpoint уже начинается с /api
+        const cleanEndpoint = endpoint.startsWith('/api/') ? endpoint : `${this.baseUrl}${endpoint}`;
+        const url = cleanEndpoint;
 
         const defaultOptions = {
             headers: {
@@ -38,6 +45,7 @@ class ApiClient {
             if (!response.ok) {
                 if (response.status === 401) {
                     // Unauthorized - redirect to login
+                    localStorage.removeItem('authToken');
                     localStorage.removeItem('token');
                     window.location.href = '/';
                     return;
@@ -82,7 +90,7 @@ class ApiClient {
             formData.append(key, additionalData[key]);
         });
 
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
         const url = `${this.baseUrl}${endpoint}`;
 
         try {
@@ -98,6 +106,7 @@ class ApiClient {
 
             if (!response.ok) {
                 if (response.status === 401) {
+                    localStorage.removeItem('authToken');
                     localStorage.removeItem('token');
                     window.location.href = '/';
                     return;
@@ -165,8 +174,4 @@ function formatNumber(number, decimals = 2) {
         maximumFractionDigits: decimals
     }).format(number);
 }
-
-// Create global api instance
-const api = new ApiClient();
-
 

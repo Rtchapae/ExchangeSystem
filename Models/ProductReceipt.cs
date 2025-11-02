@@ -15,7 +15,7 @@ namespace ExchangeSystem.Models
         public DateTime ReceiptDate { get; set; }
 
         [Required]
-        [StringLength(30)]
+        [StringLength(200)]
         public string DocumentNumber { get; set; } = string.Empty;
 
         [Required]
@@ -27,7 +27,7 @@ namespace ExchangeSystem.Models
 
         public DateTime? ContractDate { get; set; }
 
-        [StringLength(30)]
+        [StringLength(200)]
         public string? ContractNumber { get; set; }
 
         [Required]
@@ -52,6 +52,11 @@ namespace ExchangeSystem.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalCost { get; set; }
 
+        // Ссылки на организацию и УО
+        public int? OrganizationId { get; set; }
+
+        public int? EducationDepartmentId { get; set; }
+
         [StringLength(200)]
         public string? Notes { get; set; }
 
@@ -62,6 +67,9 @@ namespace ExchangeSystem.Models
         // Navigation properties
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;
+
+        [ForeignKey("OrganizationId")]
+        public virtual Store? Organization { get; set; }
     }
 }
 

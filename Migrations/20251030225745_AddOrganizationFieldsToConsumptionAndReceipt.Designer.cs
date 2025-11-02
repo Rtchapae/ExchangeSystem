@@ -3,6 +3,7 @@ using System;
 using ExchangeSystem.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ExchangeSystem.Migrations
 {
     [DbContext(typeof(ExchangeDbContext))]
-    partial class ExchangeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251030225745_AddOrganizationFieldsToConsumptionAndReceipt")]
+    partial class AddOrganizationFieldsToConsumptionAndReceipt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -61,31 +64,31 @@ namespace ExchangeSystem.Migrations
                         {
                             Id = 1,
                             Code = "NURSERY",
-                            CreatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1711),
+                            CreatedAt = new DateTime(2025, 10, 30, 22, 57, 45, 485, DateTimeKind.Utc).AddTicks(6124),
                             Description = "Дети ясельного возраста",
                             IsActive = true,
                             Name = "Ясли 10,5",
-                            UpdatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1702)
+                            UpdatedAt = new DateTime(2025, 10, 30, 22, 57, 45, 485, DateTimeKind.Utc).AddTicks(6121)
                         },
                         new
                         {
                             Id = 2,
                             Code = "KINDERGARTEN",
-                            CreatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1716),
+                            CreatedAt = new DateTime(2025, 10, 30, 22, 57, 45, 485, DateTimeKind.Utc).AddTicks(6127),
                             Description = "Дети дошкольного возраста",
                             IsActive = true,
                             Name = "САД 10,5",
-                            UpdatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1714)
+                            UpdatedAt = new DateTime(2025, 10, 30, 22, 57, 45, 485, DateTimeKind.Utc).AddTicks(6126)
                         },
                         new
                         {
                             Id = 3,
                             Code = "STAFF",
-                            CreatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1722),
+                            CreatedAt = new DateTime(2025, 10, 30, 22, 57, 45, 485, DateTimeKind.Utc).AddTicks(6129),
                             Description = "Персонал учреждения",
                             IsActive = true,
                             Name = "Сотрудники",
-                            UpdatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(1719)
+                            UpdatedAt = new DateTime(2025, 10, 30, 22, 57, 45, 485, DateTimeKind.Utc).AddTicks(6128)
                         });
                 });
 
@@ -501,16 +504,16 @@ namespace ExchangeSystem.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ContractNumber")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DocumentNumber")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<int?>("EducationDepartmentId")
                         .HasColumnType("integer");
@@ -881,12 +884,12 @@ namespace ExchangeSystem.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(362),
+                            CreatedAt = new DateTime(2025, 10, 30, 22, 57, 45, 485, DateTimeKind.Utc).AddTicks(5052),
                             Email = "admin@exchangesystem.com",
                             FullName = "Администратор системы",
                             IsActive = true,
-                            LastLoginAt = new DateTime(2025, 10, 30, 23, 57, 9, 939, DateTimeKind.Utc).AddTicks(371),
-                            PasswordHash = "$2a$11$7q.MawpzxRtQWdx/jAORju0C2n8o3NvHaoXdPpShtc92j0wP6ZASu",
+                            LastLoginAt = new DateTime(2025, 10, 30, 22, 57, 45, 485, DateTimeKind.Utc).AddTicks(5064),
+                            PasswordHash = "$2a$11$SiKyi8cq8pqibFlUXlrIduPTub37F/SIKbJ0dg/zRsr2qZBbv1sM6",
                             Role = "Admin",
                             Username = "admin"
                         });

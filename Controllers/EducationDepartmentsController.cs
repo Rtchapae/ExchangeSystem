@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ExchangeSystem.Data;
 using ExchangeSystem.Models;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ExchangeSystem.Controllers
 {
@@ -20,6 +21,7 @@ namespace ExchangeSystem.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous] // Временно для тестирования
         public async Task<IActionResult> GetEducationDepartments()
         {
             try

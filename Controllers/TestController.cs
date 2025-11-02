@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using BCrypt.Net;
 
 namespace ExchangeSystem.Controllers
 {
@@ -6,26 +7,21 @@ namespace ExchangeSystem.Controllers
     [Route("api/[controller]")]
     public class TestController : ControllerBase
     {
-        [HttpGet]
-        public IActionResult Get()
+        [HttpGet("password")]
+        public IActionResult TestPassword()
         {
-            return Ok(new { message = "Test API is working!", timestamp = DateTime.Now });
-        }
-
-        [HttpPost("upload")]
-        public IActionResult Upload(IFormFile file)
-        {
-            if (file == null || file.Length == 0)
+            string storedHash = "$2a$11$SWL1sbN2PR60DND5RiuNbePvjAVv9yMo8kmSpFZzMdUvEZMEDjJZC";
+            string[] passwords = { "admin123", "admin", "password", "123456" };
+            
+            var results = new List<object>();
+            
+            foreach (string pwd in passwords)
             {
-                return BadRequest("No file uploaded");
+                bool verified = BCrypt.Net.BCrypt.Verify(pwd, storedHash);
+                results.Add(new { password = pwd, verified = verified });
             }
-
-            return Ok(new { 
-                message = "File uploaded successfully", 
-                fileName = file.FileName, 
-                size = file.Length 
-            });
+            
+            return Ok(new { storedHash, results });
         }
     }
 }
-

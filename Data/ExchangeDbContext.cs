@@ -23,6 +23,7 @@ namespace ExchangeSystem.Data
         public DbSet<EducationDepartment> EducationDepartments { get; set; }
         public DbSet<SvsCatalogUpdate> SvsCatalogUpdates { get; set; }
         public DbSet<SvsMaterialMapping> SvsMaterialMappings { get; set; }
+        public DbSet<SvsMaterial> SvsMaterials { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -61,12 +62,24 @@ namespace ExchangeSystem.Data
                 .HasForeignKey(pc => pc.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<ProductConsumption>()
+                .HasOne(pc => pc.Organization)
+                .WithMany()
+                .HasForeignKey(pc => pc.OrganizationId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // ProductReceipt relationships
             modelBuilder.Entity<ProductReceipt>()
                 .HasOne(pr => pr.Product)
                 .WithMany()
                 .HasForeignKey(pr => pr.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProductReceipt>()
+                .HasOne(pr => pr.Organization)
+                .WithMany()
+                .HasForeignKey(pr => pr.OrganizationId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // DataImportError relationships
             modelBuilder.Entity<DataImportError>()
@@ -130,6 +143,13 @@ namespace ExchangeSystem.Data
                 .HasOne(smm => smm.Organization)
                 .WithMany()
                 .HasForeignKey(smm => smm.OrganizationId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // SvsMaterial relationships
+            modelBuilder.Entity<SvsMaterial>()
+                .HasOne(sm => sm.EducationDepartment)
+                .WithMany()
+                .HasForeignKey(sm => sm.EducationDepartmentId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             // Configure indexes

@@ -8,91 +8,98 @@
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h3 class="card-title mb-0">
-                        <i class="fas fa-exchange-alt me-2"></i>Сопоставление внутренних продуктов с материалами СВС
+                        <i class="fas fa-exchange-alt me-2"></i>Сопоставление данных
                     </h3>
                 </div>
                 <div class="card-body">
-                    <p>На этой странице вы можете сопоставлять продукты вашей системы с материалами из справочника СВС. Сопоставление может быть применено ко всем организациям в рамках выбранного УО или к конкретной организации.</p>
+                    <p>На этой странице вы можете просматривать данные расхода и прихода по организациям, редактировать коды СВС и выгружать данные в JSON.</p>
 
                     <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="mappingEducationDepartmentSelect" class="form-label">Выберите УО (опционально)</label>
-                            <select class="form-select" id="mappingEducationDepartmentSelect" onchange="loadOrganizationsForMapping()">
-                                <option value="">Все УО</option>
+                        <div class="col-md-3">
+                            <label for="mappingEducationDepartmentSelect" class="form-label">УО *</label>
+                            <select class="form-select" id="mappingEducationDepartmentSelect" onchange="loadOrganizationsForMapping()" required>
+                                <option value="">Выберите УО</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label for="mappingOrganizationSelect" class="form-label">Выберите Организацию (опционально)</label>
-                            <select class="form-select" id="mappingOrganizationSelect" onchange="loadMappings()">
-                                <option value="">Все организации</option>
+                        <div class="col-md-3">
+                            <label for="mappingOrganizationSelect" class="form-label">Организация *</label>
+                            <select class="form-select" id="mappingOrganizationSelect" required disabled>
+                                <option value="">Сначала выберите УО</option>
                             </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Тип данных</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="dataType" id="dataTypeConsumption" value="consumption" checked>
+                                    <label class="form-check-label" for="dataTypeConsumption">Расход</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="dataType" id="dataTypeReceipts" value="receipts">
+                                    <label class="form-check-label" for="dataTypeReceipts">Приход</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="dataDate" class="form-label">Дата (опционально)</label>
+                            <input type="date" class="form-control" id="dataDate">
+                            <small class="text-muted">Если не указана, будут загружены все данные</small>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <button class="btn btn-primary" onclick="loadData()"><i class="fas fa-search me-1"></i>Загрузить данные</button>
+                            <button class="btn btn-success ms-2" onclick="downloadExport()"><i class="fas fa-download me-1"></i>Выгрузить JSON</button>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <input type="text" class="form-control" id="mappingSearchInput" placeholder="Поиск по названию продукта или коду СВС..." onkeyup="filterMappings()">
+                        <input type="text" class="form-control" id="mappingSearchInput" placeholder="Поиск по названию продукта или коду СВС..." onkeyup="filterData()">
                     </div>
 
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
                             <thead class="table-dark">
-                                <tr>
-                                    <th>Название продукта</th>
-                                    <th>Код продукта</th>
-                                    <th>Категория</th>
-                                    <th>Ед. изм.</th>
-                                    <th>Сопоставленный СВС материал</th>
-                                    <th>Код СВС</th>
-                                    <th>Уверенность</th>
-                                    <th>Действия</th>
+                                <tr id="tableHeader">
+                                    <!-- Заголовки будут заполнены динамически -->
                                 </tr>
                             </thead>
-                            <tbody id="mappingsTableBody">
-                                <tr><td colspan="8" class="text-center">Выберите УО или организацию для просмотра сопоставлений.</td></tr>
+                            <tbody id="dataTableBody">
+                                <tr><td colspan="10" class="text-center">Выберите организацию и тип данных, затем нажмите "Загрузить данные". Дата опциональна.</td></tr>
                             </tbody>
                         </table>
                     </div>
-
-                    <div class="d-flex justify-content-between mt-3">
-                        <button class="btn btn-success" id="exportMappingsBtn">Экспортировать сопоставления в JSON</button>
                     </div>
-
-                    <pre id="exportJsonDisplay" class="bg-light p-3 rounded mt-3" style="max-height: 400px; overflow-y: auto; display: none;"></pre>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Mapping Modal -->
-<div class="modal fade" id="mappingModal" tabindex="-1" aria-labelledby="mappingModalLabel" aria-hidden="true">
+<!-- Modal для редактирования кода СВС -->
+<div class="modal fade" id="editSvsCodeModal" tabindex="-1" aria-labelledby="editSvsCodeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="mappingModalLabel">Сопоставить продукт</h5>
+                <h5 class="modal-title" id="editSvsCodeModalLabel">Редактировать код СВС</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="saveMappingForm">
-                    <input type="hidden" id="modalProductId">
-                    <p><strong>Продукт:</strong> <span id="modalProductName"></span> (<span id="modalProductCode"></span>)</p>
+                <form id="saveSvsCodeForm">
+                    <input type="hidden" id="modalRecordId">
+                    <input type="hidden" id="modalRecordType">
                     <div class="mb-3">
-                        <label for="modalSvsMaterialSelect" class="form-label">Выберите материал СВС</label>
-                        <select class="form-select" id="modalSvsMaterialSelect" required>
-                            <option value="">Выберите материал</option>
-                        </select>
+                        <label for="modalProductName" class="form-label">Продукт</label>
+                        <input type="text" class="form-control" id="modalProductName" readonly>
                     </div>
                     <div class="mb-3">
-                        <label for="modalSvsCode" class="form-label">Код СВС (для экспорта)</label>
-                        <input type="text" class="form-control" id="modalSvsCode" readonly>
+                        <label for="modalSvsCode" class="form-label">Код СВС</label>
+                        <input type="text" class="form-control" id="modalSvsCode" placeholder="Введите код СВС">
                     </div>
-                    <div class="mb-3">
-                        <label for="modalMappingNotes" class="form-label">Примечания</label>
-                        <input type="text" class="form-control" id="modalMappingNotes">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Сохранить сопоставление</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
                 </form>
-                <div id="mappingFormResult" class="mt-3"></div>
+                <div id="svsCodeFormResult" class="mt-3"></div>
             </div>
         </div>
     </div>
@@ -100,76 +107,49 @@
 
 @section Scripts {
     <script>
-        let allMappings = [];
-        let allSvsMaterials = [];
+        let allData = [];
+        let currentDataType = 'consumption';
+        let currentOrganizationId = null;
 
         document.addEventListener('DOMContentLoaded', async function () {
             await loadEducationDepartmentsForMapping();
-            await loadSvsMaterialsForModal(); // Load all SVS materials once for the modal
-
-            document.getElementById('exportMappingsBtn').addEventListener('click', async function () {
-                const educationDepartmentId = document.getElementById('mappingEducationDepartmentSelect').value;
-                const organizationId = document.getElementById('mappingOrganizationSelect').value;
-                const resultDiv = document.getElementById('exportResult');
-                const jsonDisplay = document.getElementById('exportJsonDisplay');
-                resultDiv.innerHTML = '<div class="alert alert-info">Экспорт сопоставлений...</div>';
-                jsonDisplay.style.display = 'none';
-
-                try {
-                    const url = `/api/svs/export?educationDepartmentId=${educationDepartmentId}&organizationId=${organizationId}`;
-                    const response = await api.get(url);
-                    if (response.success) {
-                        resultDiv.innerHTML = `<div class="alert alert-success">Сопоставления успешно экспортированы.</div>`;
-                        jsonDisplay.textContent = JSON.stringify(response.data, null, 2);
-                        jsonDisplay.style.display = 'block';
-                    } else {
-                        resultDiv.innerHTML = `<div class="alert alert-danger">${response.message || 'Ошибка при экспорте сопоставлений.'}</div>`;
+            
+            // Обработчик изменения типа данных
+            document.querySelectorAll('input[name="dataType"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    currentDataType = this.value;
+                    if (currentOrganizationId && document.getElementById('dataDate').value) {
+                        loadData();
                     }
-                } catch (error) {
-                    console.error('Ошибка при экспорте сопоставлений:', error);
-                    resultDiv.innerHTML = `<div class="alert alert-danger">Произошла ошибка: ${error.message || 'Неизвестная ошибка.'}</div>`;
-                }
+                });
             });
 
-            document.getElementById('saveMappingForm').addEventListener('submit', async function (e) {
+            // Обработчик формы сохранения кода СВС
+            document.getElementById('saveSvsCodeForm').addEventListener('submit', async function (e) {
                 e.preventDefault();
-                const productId = document.getElementById('modalProductId').value;
-                const svsMatId = document.getElementById('modalSvsMaterialSelect').value;
+                const recordId = document.getElementById('modalRecordId').value;
+                const recordType = document.getElementById('modalRecordType').value;
                 const svsCode = document.getElementById('modalSvsCode').value;
-                const mappingNotes = document.getElementById('modalMappingNotes').value;
-                const educationDepartmentId = document.getElementById('mappingEducationDepartmentSelect').value;
-                const organizationId = document.getElementById('mappingOrganizationSelect').value;
-                const resultDiv = document.getElementById('mappingFormResult');
-
-                const payload = {
-                    productId: parseInt(productId),
-                    svsMatId: parseInt(svsMatId),
-                    svsCode: svsCode,
-                    notes: mappingNotes,
-                    educationDepartmentId: educationDepartmentId ? parseInt(educationDepartmentId) : null,
-                    organizationId: organizationId ? parseInt(organizationId) : null
-                };
+                const resultDiv = document.getElementById('svsCodeFormResult');
 
                 try {
-                    const response = await api.post('/api/svs/mappings', payload);
+                    const endpoint = recordType === 'consumption' 
+                        ? `/api/data/consumption/${recordId}/svs-code`
+                        : `/api/data/receipts/${recordId}/svs-code`;
+                    
+                    const response = await api.put(endpoint, { svsCode: svsCode });
                     if (response.success) {
                         resultDiv.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('mappingModal'));
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('editSvsCodeModal'));
                         modal.hide();
-                        await loadMappings(); // Reload mappings after saving
+                        await loadData(); // Перезагружаем данные после сохранения
                     } else {
-                        resultDiv.innerHTML = `<div class="alert alert-danger">${response.message || 'Ошибка сохранения сопоставления.'}</div>`;
+                        resultDiv.innerHTML = `<div class="alert alert-danger">${response.message || 'Ошибка сохранения кода СВС.'}</div>`;
                     }
                 } catch (error) {
-                    console.error('Ошибка сохранения сопоставления:', error);
+                    console.error('Ошибка сохранения кода СВС:', error);
                     resultDiv.innerHTML = `<div class="alert alert-danger">Произошла ошибка: ${error.message || 'Неизвестная ошибка.'}</div>`;
                 }
-            });
-
-            document.getElementById('modalSvsMaterialSelect').addEventListener('change', function() {
-                const selectedSvsMatId = this.value;
-                const selectedSvsMaterial = allSvsMaterials.find(m => m.matId == selectedSvsMatId);
-                document.getElementById('modalSvsCode').value = selectedSvsMaterial ? selectedSvsMaterial.matId : '';
             });
         });
 
@@ -179,7 +159,7 @@
                 if (response.success) {
                     const departments = response.data;
                     const selectElement = document.getElementById('mappingEducationDepartmentSelect');
-                    selectElement.innerHTML = '<option value="">Все УО</option>';
+                    selectElement.innerHTML = '<option value="">Выберите УО</option>';
                     departments.forEach(dep => {
                         const option = document.createElement('option');
                         option.value = dep.id;
@@ -188,14 +168,15 @@
                     });
                 }
             } catch (error) {
-                console.error('Ошибка при загрузке УО для сопоставления:', error);
+                console.error('Ошибка при загрузке УО:', error);
             }
         }
 
         async function loadOrganizationsForMapping() {
             const educationDepartmentId = document.getElementById('mappingEducationDepartmentSelect').value;
             const selectElement = document.getElementById('mappingOrganizationSelect');
-            selectElement.innerHTML = '<option value="">Все организации</option>'; // Reset organizations
+            selectElement.innerHTML = '<option value="">Выберите организацию</option>';
+            selectElement.disabled = true;
 
             if (educationDepartmentId) {
                 try {
@@ -207,114 +188,181 @@
                             option.textContent = `${org.name} (${org.city || 'Без города'})`;
                             selectElement.appendChild(option);
                         });
+                        selectElement.disabled = false;
                     }
                 } catch (error) {
-                    console.error('Ошибка при загрузке организаций для УО:', error);
+                    console.error('Ошибка при загрузке организаций:', error);
                 }
             }
-            await loadMappings(); // Reload mappings when organization selection changes
         }
 
-        async function loadMappings() {
-            const educationDepartmentId = document.getElementById('mappingEducationDepartmentSelect').value;
+        async function loadData() {
             const organizationId = document.getElementById('mappingOrganizationSelect').value;
-            const tableBody = document.getElementById('mappingsTableBody');
-            tableBody.innerHTML = '<tr><td colspan="8" class="text-center">Загрузка сопоставлений...</td></tr>';
-
-            try {
-                const url = `/api/svs/mappings?educationDepartmentId=${educationDepartmentId}&organizationId=${organizationId}`;
-                const response = await api.get(url);
-
-                if (response.success && response.data.length > 0) {
-                    allMappings = response.data;
-                    displayMappings(allMappings);
-                } else {
-                    allMappings = [];
-                    tableBody.innerHTML = '<tr><td colspan="8" class="text-center">Нет сопоставлений для выбранных критериев.</td></tr>';
-                }
-            } catch (error) {
-                console.error('Ошибка при загрузке сопоставлений:', error);
-                tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Ошибка загрузки сопоставлений.</td></tr>';
-            }
-        }
-
-        function displayMappings(mappings) {
-            const tableBody = document.getElementById('mappingsTableBody');
-            tableBody.innerHTML = '';
-
-            if (mappings.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="8" class="text-center">Нет сопоставлений для отображения.</td></tr>';
+            const date = document.getElementById('dataDate').value;
+            const dataType = document.querySelector('input[name="dataType"]:checked').value;
+            
+            if (!organizationId) {
+                alert('Выберите организацию');
                 return;
             }
 
-            mappings.forEach(mapping => {
-                const row = tableBody.insertRow();
-                row.insertCell().textContent = mapping.productName;
-                row.insertCell().textContent = mapping.productCode;
-                row.insertCell().textContent = mapping.productCategory;
-                row.insertCell().textContent = mapping.productUnit;
-                row.insertCell().textContent = mapping.svsName || 'Не сопоставлено';
-                row.insertCell().textContent = mapping.svsCode || '';
-                row.insertCell().textContent = (mapping.confidence * 100).toFixed(0) + '%';
+            currentOrganizationId = organizationId;
+            currentDataType = dataType;
 
-                const actionsCell = row.insertCell();
-                const editBtn = document.createElement('button');
-                editBtn.className = 'btn btn-sm btn-info';
-                editBtn.textContent = 'Редактировать';
-                editBtn.onclick = () => openMappingModal(mapping);
-                actionsCell.appendChild(editBtn);
+            const tableBody = document.getElementById('dataTableBody');
+            const tableHeader = document.getElementById('tableHeader');
+            tableBody.innerHTML = '<tr><td colspan="10" class="text-center">Загрузка данных...</td></tr>';
 
-                if (!mapping.svsCode) {
-                    row.classList.add('table-warning'); // Highlight unmapped rows
-                }
-            });
-        }
-
-        async function loadSvsMaterialsForModal() {
-            // This endpoint needs to be created to fetch all SVS materials
-            // For now, we'll use a placeholder or assume they are loaded with mappings
-            // In a real scenario, you'd have an API like /api/svs/all-materials
             try {
-                const response = await api.get('/api/svs/materials-list'); // Assuming a new endpoint
-                if (response.success) {
-                    allSvsMaterials = response.data;
-                    const selectElement = document.getElementById('modalSvsMaterialSelect');
-                    selectElement.innerHTML = '<option value="">Выберите материал</option>';
-                    allSvsMaterials.forEach(mat => {
-                        const option = document.createElement('option');
-                        option.value = mat.matId;
-                        option.textContent = `${mat.nameMat} (${mat.nameMeasure})`;
-                        selectElement.appendChild(option);
-                    });
+                let url = `/api/data/${dataType}?organizationId=${organizationId}`;
+                if (date) {
+                    url += `&date=${date}`;
+                }
+                const response = await api.get(url);
+
+                if (response.success && response.data.length > 0) {
+                    allData = response.data;
+                    displayData(allData, dataType);
+                } else {
+                    allData = [];
+                    tableBody.innerHTML = '<tr><td colspan="10" class="text-center">Нет данных для выбранных критериев.</td></tr>';
                 }
             } catch (error) {
-                console.error('Ошибка при загрузке материалов СВС для модального окна:', error);
+                console.error('Ошибка при загрузке данных:', error);
+                tableBody.innerHTML = '<tr><td colspan="10" class="text-center text-danger">Ошибка загрузки данных.</td></tr>';
             }
         }
 
-        function openMappingModal(mapping) {
-            document.getElementById('modalProductId').value = mapping.productId;
-            document.getElementById('modalProductName').textContent = mapping.productName;
-            document.getElementById('modalProductCode').textContent = mapping.productCode;
-            document.getElementById('modalMappingNotes').value = mapping.mappingNotes || '';
+        function displayData(data, dataType) {
+            const tableBody = document.getElementById('dataTableBody');
+            const tableHeader = document.getElementById('tableHeader');
+            
+            tableBody.innerHTML = '';
+            
+            if (dataType === 'consumption') {
+                tableHeader.innerHTML = `
+                    <th>Дата</th>
+                    <th>Продукт</th>
+                    <th>Код продукта</th>
+                    <th>Ед. изм.</th>
+                    <th>Количество</th>
+                    <th>Цена</th>
+                    <th>Сумма</th>
+                    <th>Категория</th>
+                    <th>Код СВС</th>
+                    <th>Действия</th>
+                `;
+                
+                data.forEach(item => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = new Date(item.date).toLocaleDateString();
+                    row.insertCell().textContent = item.productName;
+                    row.insertCell().textContent = item.productCode || '';
+                    row.insertCell().textContent = item.unit || '';
+                    row.insertCell().textContent = item.quantity;
+                    row.insertCell().textContent = item.price;
+                    row.insertCell().textContent = item.totalCost;
+                    row.insertCell().textContent = item.categoryName || '';
+                    const svsCodeCell = row.insertCell();
+                    svsCodeCell.textContent = item.svsCode || '';
+                    if (!item.svsCode) {
+                        svsCodeCell.classList.add('text-danger', 'fst-italic');
+                        svsCodeCell.textContent = 'Не присвоен';
+                    }
+                    
+                    const actionsCell = row.insertCell();
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn btn-sm btn-info';
+                    editBtn.innerHTML = '<i class="fas fa-edit me-1"></i>Редактировать';
+                    editBtn.onclick = () => openEditModal(item.id, 'consumption', item.productName, item.svsCode || '');
+                    actionsCell.appendChild(editBtn);
+                });
+            } else {
+                tableHeader.innerHTML = `
+                    <th>Дата</th>
+                    <th>Номер документа</th>
+                    <th>Поставщик</th>
+                    <th>Продукт</th>
+                    <th>Код продукта</th>
+                    <th>Ед. изм.</th>
+                    <th>Количество</th>
+                    <th>Цена</th>
+                    <th>Сумма</th>
+                    <th>Код СВС</th>
+                    <th>Действия</th>
+                `;
+                
+                data.forEach(item => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = new Date(item.date).toLocaleDateString();
+                    row.insertCell().textContent = item.documentNumber || '';
+                    row.insertCell().textContent = item.supplierName || '';
+                    row.insertCell().textContent = item.productName;
+                    row.insertCell().textContent = item.productCode || '';
+                    row.insertCell().textContent = item.unit || '';
+                    row.insertCell().textContent = item.quantity;
+                    row.insertCell().textContent = item.price;
+                    row.insertCell().textContent = item.totalCost;
+                    const svsCodeCell = row.insertCell();
+                    svsCodeCell.textContent = item.svsCode || '';
+                    if (!item.svsCode) {
+                        svsCodeCell.classList.add('text-danger', 'fst-italic');
+                        svsCodeCell.textContent = 'Не присвоен';
+                    }
+                    
+                    const actionsCell = row.insertCell();
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn btn-sm btn-info';
+                    editBtn.innerHTML = '<i class="fas fa-edit me-1"></i>Редактировать';
+                    editBtn.onclick = () => openEditModal(item.id, 'receipts', item.productName, item.svsCode || '');
+                    actionsCell.appendChild(editBtn);
+                });
+            }
+        }
 
-            const svsMaterialSelect = document.getElementById('modalSvsMaterialSelect');
-            svsMaterialSelect.value = mapping.svsMatId || '';
-            document.getElementById('modalSvsCode').value = mapping.svsCode || '';
-
-            const modal = new bootstrap.Modal(document.getElementById('mappingModal'));
+        function openEditModal(recordId, recordType, productName, currentSvsCode) {
+            document.getElementById('modalRecordId').value = recordId;
+            document.getElementById('modalRecordType').value = recordType;
+            document.getElementById('modalProductName').value = productName;
+            document.getElementById('modalSvsCode').value = currentSvsCode;
+            document.getElementById('svsCodeFormResult').innerHTML = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editSvsCodeModal'));
             modal.show();
         }
 
-        function filterMappings() {
+        function filterData() {
             const searchInput = document.getElementById('mappingSearchInput').value.toLowerCase();
-            const filtered = allMappings.filter(mapping =>
-                mapping.productName.toLowerCase().includes(searchInput) ||
-                mapping.productCode.toLowerCase().includes(searchInput) ||
-                (mapping.svsName && mapping.svsName.toLowerCase().includes(searchInput)) ||
-                (mapping.svsCode && mapping.svsCode.toLowerCase().includes(searchInput))
+            const filtered = allData.filter(item =>
+                item.productName.toLowerCase().includes(searchInput) ||
+                (item.productCode && item.productCode.toLowerCase().includes(searchInput)) ||
+                (item.svsCode && item.svsCode.toLowerCase().includes(searchInput))
             );
-            displayMappings(filtered);
+            displayData(filtered, currentDataType);
+        }
+
+        function downloadExport() {
+            const organizationId = document.getElementById('mappingOrganizationSelect').value;
+            const educationDepartmentId = document.getElementById('mappingEducationDepartmentSelect').value;
+            const type = document.querySelector('input[name="dataType"]:checked').value;
+            const date = document.getElementById('dataDate').value;
+
+            if (!organizationId) {
+                alert('Выберите организацию');
+                return;
+            }
+
+            const params = new URLSearchParams();
+            params.append('organizationId', organizationId);
+            
+            // Если дата указана, используем её, иначе выгружаем за все даты
+            if (date) {
+                params.append('from', date);
+                params.append('to', date);
+            }
+
+            const url = `/api/exports/${type}?${params.toString()}`;
+            window.location.href = url;
         }
     </script>
 }

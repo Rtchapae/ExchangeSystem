@@ -65,6 +65,26 @@ namespace ExchangeSystem.Controllers
             }
         }
 
+        [HttpGet("by-education-department/{educationDepartmentId}")]
+        public async Task<IActionResult> GetStoresByEducationDepartment(int educationDepartmentId)
+        {
+            try
+            {
+                var stores = await _storeService.GetStoresByEducationDepartmentAsync(educationDepartmentId);
+
+                return Ok(new
+                {
+                    success = true,
+                    data = stores
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при получении магазинов для УО {EducationDepartmentId}", educationDepartmentId);
+                return StatusCode(500, new { success = false, message = "Внутренняя ошибка сервера" });
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateStore([FromBody] Store store)
         {

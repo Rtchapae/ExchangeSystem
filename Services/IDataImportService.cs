@@ -7,6 +7,7 @@ namespace ExchangeSystem.Services
         Task<ImportResult> ImportConsumptionDataAsync(Stream csvStream, string fileName, int? organizationId = null);
         Task<ImportResult> ImportProductDataAsync(Stream csvStream, string fileName);
         Task<ImportResult> ImportReceiptDataAsync(Stream csvStream, string fileName, int? organizationId = null);
+        Task<ImportResult> ImportJsonDataAsync(string jsonContent, string fileName, int? educationDepartmentId = null, int? organizationId = null);
         Task<List<DataImportLog>> GetImportHistoryAsync();
         Task<DataImportLog?> GetImportLogByIdAsync(int id);
         Task<List<DataImportError>> GetImportErrorsAsync(int importLogId);

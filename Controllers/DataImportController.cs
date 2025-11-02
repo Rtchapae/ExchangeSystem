@@ -268,5 +268,116 @@ namespace ExchangeSystem.Controllers
                 return StatusCode(500, new { success = false, message = "Внутренняя ошибка сервера" });
             }
         }
+
+        [HttpPost("dbf/consumption")]
+        public async Task<IActionResult> ImportDbfConsumption(IFormFile file, [FromForm] int? organizationId)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("Файл не выбран или пуст");
+            }
+
+            try
+            {
+                using var stream = file.OpenReadStream();
+                var result = await _dbfImportService.ImportDbfDataAsync(stream, file.FileName, organizationId);
+                if (result.IsSuccess)
+                {
+                    return Ok(new { success = true, message = "Импорт DBF расхода завершен", importLogId = result.ImportLogId, totalRecords = result.TotalRecords, processedRecords = result.ProcessedRecords, successRecords = result.SuccessRecords, errorRecords = result.ErrorRecords, organizationId });
+                }
+                return BadRequest(new { success = false, message = "Ошибка импорта DBF расхода", errors = result.Errors });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при импорте DBF расхода {FileName}", file.FileName);
+                return StatusCode(500, new { success = false, message = "Внутренняя ошибка сервера" });
+            }
+        }
+
+        [HttpPost("dbf/receipts")]
+        public async Task<IActionResult> ImportDbfReceipts(IFormFile file, [FromForm] int? organizationId)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("Файл не выбран или пуст");
+            }
+
+            try
+            {
+                using var stream = file.OpenReadStream();
+                // Временно используем тот же обработчик до выделения парсера приходов
+                var result = await _dbfImportService.ImportDbfDataAsync(stream, file.FileName, organizationId);
+                if (result.IsSuccess)
+                {
+                    return Ok(new { success = true, message = "Импорт DBF прихода завершен", importLogId = result.ImportLogId, totalRecords = result.TotalRecords, processedRecords = result.ProcessedRecords, successRecords = result.SuccessRecords, errorRecords = result.ErrorRecords, organizationId });
+                }
+                return BadRequest(new { success = false, message = "Ошибка импорта DBF прихода", errors = result.Errors });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при импорте DBF прихода {FileName}", file.FileName);
+                return StatusCode(500, new { success = false, message = "Внутренняя ошибка сервера" });
+            }
+        }
+
+        [HttpPost("json")]
+        public async Task<IActionResult> ImportJsonData(IFormFile file, [FromForm] int? educationDepartmentId, [FromForm] int? organizationId)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("Файл не выбран или пуст");
+            }
+
+            if (!educationDepartmentId.HasValue)
+            {
+                return BadRequest("Необходимо выбрать УО");
+            }
+
+            if (!file.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("Поддерживаются только JSON файлы");
+            }
+
+            try
+            {
+                _logger.LogInformation("Импорт справочника СВС из файла {FileName} для УО {EducationDepartmentId} и организации {OrganizationId}", file.FileName, educationDepartmentId, organizationId);
+                
+                using var stream = file.OpenReadStream();
+                using var reader = new StreamReader(stream);
+                var jsonContent = await reader.ReadToEndAsync();
+
+                var result = await _dataImportService.ImportJsonDataAsync(jsonContent, file.FileName, educationDepartmentId, organizationId);
+
+                if (result.IsSuccess)
+                {
+                    return Ok(new
+                    {
+                        success = true,
+                        message = result.Message,
+                        importLogId = result.ImportLogId,
+                        totalRecords = result.TotalRecords,
+                        processedRecords = result.ProcessedRecords,
+                        successRecords = result.SuccessRecords,
+                        errorRecords = result.ErrorRecords,
+                        educationDepartmentId = educationDepartmentId
+                    });
+                }
+                else
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = result.Message,
+                        errors = result.Errors,
+                        importLogId = result.ImportLogId
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при импорте справочника СВС");
+                return StatusCode(500, new { success = false, message = "Внутренняя ошибка сервера" });
+            }
+        }
     }
 }

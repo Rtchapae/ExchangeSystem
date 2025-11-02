@@ -36,6 +36,11 @@ namespace ExchangeSystem.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalCost { get; set; }
 
+        // Ссылки на организацию и УО
+        public int? OrganizationId { get; set; }
+
+        public int? EducationDepartmentId { get; set; }
+
         [Required]
         public int CategoryId { get; set; }
 
@@ -75,6 +80,9 @@ namespace ExchangeSystem.Models
 
         [ForeignKey("CategoryId")]
         public virtual ConsumptionCategory Category { get; set; } = null!;
+
+        [ForeignKey("OrganizationId")]
+        public virtual Store? Organization { get; set; }
     }
 }
 

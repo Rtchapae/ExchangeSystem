@@ -73,6 +73,14 @@ namespace ExchangeSystem.Services
                 .OrderBy(s => s.Name)
                 .ToListAsync();
         }
+
+        public async Task<List<Store>> GetStoresByEducationDepartmentAsync(int educationDepartmentId)
+        {
+            return await _context.Stores
+                .Where(s => s.IsActive && s.EducationDepartmentId == educationDepartmentId)
+                .OrderBy(s => s.Name)
+                .ToListAsync();
+        }
     }
 }
 
