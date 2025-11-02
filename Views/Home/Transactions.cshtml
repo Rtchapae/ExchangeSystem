@@ -1,0 +1,428 @@
+@{
+    ViewData["Title"] = "Транзакции";
+}
+
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-receipt me-2"></i>Управление транзакциями</h2>
+        <hr>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <div class="input-group">
+            <input type="text" class="form-control" id="searchInput" placeholder="Поиск транзакций...">
+            <button class="btn btn-outline-secondary" type="button" onclick="searchTransactions()">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <input type="date" class="form-control" id="dateFrom" placeholder="Дата от">
+    </div>
+    <div class="col-md-4">
+        <input type="date" class="form-control" id="dateTo" placeholder="Дата до">
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <button class="btn btn-primary" onclick="showAddTransactionModal()">
+            <i class="fas fa-plus me-2"></i>Добавить транзакцию
+        </button>
+        <button class="btn btn-info" onclick="applyFilters()">
+            <i class="fas fa-filter me-2"></i>Применить фильтры
+        </button>
+    </div>
+    <div class="col-md-6 text-end">
+        <button class="btn btn-success" onclick="exportTransactions()">
+            <i class="fas fa-download me-2"></i>Экспорт
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="transactionsTable">
+                        <thead>
+                            <tr>
+                                <th data-sortable>ID</th>
+                                <th data-sortable>Дата</th>
+                                <th data-sortable>Продукт</th>
+                                <th data-sortable>Организация</th>
+                                <th data-sortable>Документ</th>
+                                <th data-sortable>Количество</th>
+                                <th data-sortable>Цена</th>
+                                <th data-sortable>Сумма</th>
+                                <th data-sortable>Поставщик</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center">Загрузка...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pagination" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Transaction Modal -->
+<div class="modal fade" id="transactionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="transactionModalTitle">Добавить транзакцию</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="transactionForm">
+                    <input type="hidden" id="transactionId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="transactionProduct" class="form-label">Продукт *</label>
+                                <select class="form-select" id="transactionProduct" required>
+                                    <option value="">Выберите продукт</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="transactionStore" class="form-label">Организация *</label>
+                                <select class="form-select" id="transactionStore" required>
+                                    <option value="">Выберите организацию</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="transactionDate" class="form-label">Дата транзакции *</label>
+                                <input type="datetime-local" class="form-control" id="transactionDate" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="transactionDocument" class="form-label">Номер документа</label>
+                                <input type="text" class="form-control" id="transactionDocument">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="transactionQuantity" class="form-label">Количество *</label>
+                                <input type="number" class="form-control" id="transactionQuantity" step="0.001" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="transactionPrice" class="form-label">Цена *</label>
+                                <input type="number" class="form-control" id="transactionPrice" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="transactionTotal" class="form-label">Сумма</label>
+                                <input type="number" class="form-control" id="transactionTotal" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="transactionSupplier" class="form-label">Поставщик</label>
+                                <input type="text" class="form-control" id="transactionSupplier">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="transactionExpiry" class="form-label">Срок годности</label>
+                                <input type="date" class="form-control" id="transactionExpiry">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transactionNotes" class="form-label">Примечания</label>
+                        <textarea class="form-control" id="transactionNotes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveTransaction()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        let pageSize = 20;
+        let totalPages = 1;
+
+        $(document).ready(function() {
+            loadTransactions();
+            loadProductsForSelect();
+            loadStoresForSelect();
+            addTableSorting(document.getElementById('transactionsTable'));
+            
+            // Calculate total when quantity or price changes
+            document.getElementById('transactionQuantity').addEventListener('input', calculateTotal);
+            document.getElementById('transactionPrice').addEventListener('input', calculateTotal);
+        });
+
+        async function loadTransactions() {
+            try {
+                const searchTerm = document.getElementById('searchInput').value;
+                const dateFrom = document.getElementById('dateFrom').value;
+                const dateTo = document.getElementById('dateTo').value;
+                
+                let url = '/api/transactions';
+                const params = new URLSearchParams();
+                
+                if (searchTerm) params.append('search', searchTerm);
+                if (dateFrom) params.append('dateFrom', dateFrom);
+                if (dateTo) params.append('dateTo', dateTo);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+                
+                const response = await api.get(url);
+                
+                if (response.success) {
+                    displayTransactions(response.data);
+                } else {
+                    showAlert('Ошибка при загрузке транзакций', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке транзакций:', error);
+                showAlert('Ошибка при загрузке транзакций', 'danger');
+            }
+        }
+
+        function displayTransactions(transactions) {
+            const tbody = document.querySelector('#transactionsTable tbody');
+            tbody.innerHTML = '';
+
+            if (transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center">Транзакции не найдены</td></tr>';
+                return;
+            }
+
+            transactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${transaction.id}</td>
+                    <td>${formatDate(transaction.transactionDate)}</td>
+                    <td>${transaction.product?.name || 'Неизвестно'}</td>
+                    <td>${transaction.store?.name || 'Неизвестно'}</td>
+                    <td>${transaction.documentNumber || '-'}</td>
+                    <td>${formatNumber(transaction.quantity, 3)}</td>
+                    <td>${formatCurrency(transaction.price)}</td>
+                    <td>${formatCurrency(transaction.totalAmount)}</td>
+                    <td>${transaction.supplier || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editTransaction(${transaction.id})" title="Редактировать">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTransaction(${transaction.id})" title="Удалить">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function loadProductsForSelect() {
+            try {
+                const response = await api.get('/api/products');
+                if (response.success) {
+                    const select = document.getElementById('transactionProduct');
+                    select.innerHTML = '<option value="">Выберите продукт</option>';
+                    response.data.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.textContent = product.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке продуктов:', error);
+            }
+        }
+
+        async function loadStoresForSelect() {
+            try {
+                const response = await api.get('/api/stores');
+                if (response.success) {
+                    const select = document.getElementById('transactionStore');
+                    select.innerHTML = '<option value="">Выберите организацию</option>';
+                    response.data.forEach(store => {
+                        const option = document.createElement('option');
+                        option.value = store.id;
+                        option.textContent = store.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке магазинов:', error);
+            }
+        }
+
+        function searchTransactions() {
+            loadTransactions();
+        }
+
+        function applyFilters() {
+            loadTransactions();
+        }
+
+        function showAddTransactionModal() {
+            document.getElementById('transactionModalTitle').textContent = 'Добавить транзакцию';
+            document.getElementById('transactionForm').reset();
+            document.getElementById('transactionId').value = '';
+            document.getElementById('transactionDate').value = new Date().toISOString().slice(0, 16);
+            new bootstrap.Modal(document.getElementById('transactionModal')).show();
+        }
+
+        function calculateTotal() {
+            const quantity = parseFloat(document.getElementById('transactionQuantity').value) || 0;
+            const price = parseFloat(document.getElementById('transactionPrice').value) || 0;
+            const total = quantity * price;
+            document.getElementById('transactionTotal').value = total.toFixed(2);
+        }
+
+        async function editTransaction(id) {
+            try {
+                const response = await api.get(`/api/transactions/${id}`);
+                if (response.success) {
+                    const transaction = response.data;
+                    document.getElementById('transactionModalTitle').textContent = 'Редактировать транзакцию';
+                    document.getElementById('transactionId').value = transaction.id;
+                    document.getElementById('transactionProduct').value = transaction.productId;
+                    document.getElementById('transactionStore').value = transaction.storeId;
+                    document.getElementById('transactionDate').value = new Date(transaction.transactionDate).toISOString().slice(0, 16);
+                    document.getElementById('transactionDocument').value = transaction.documentNumber || '';
+                    document.getElementById('transactionQuantity').value = transaction.quantity;
+                    document.getElementById('transactionPrice').value = transaction.price;
+                    document.getElementById('transactionSupplier').value = transaction.supplier || '';
+                    document.getElementById('transactionExpiry').value = transaction.expiryDate ? new Date(transaction.expiryDate).toISOString().slice(0, 10) : '';
+                    document.getElementById('transactionNotes').value = transaction.notes || '';
+                    calculateTotal();
+                    new bootstrap.Modal(document.getElementById('transactionModal')).show();
+                } else {
+                    showAlert('Ошибка при загрузке транзакции', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке транзакции:', error);
+                showAlert('Ошибка при загрузке транзакции', 'danger');
+            }
+        }
+
+        async function saveTransaction() {
+            try {
+                const transactionData = {
+                    id: document.getElementById('transactionId').value || 0,
+                    productId: parseInt(document.getElementById('transactionProduct').value),
+                    storeId: parseInt(document.getElementById('transactionStore').value),
+                    transactionDate: new Date(document.getElementById('transactionDate').value),
+                    documentNumber: document.getElementById('transactionDocument').value,
+                    quantity: parseFloat(document.getElementById('transactionQuantity').value),
+                    price: parseFloat(document.getElementById('transactionPrice').value),
+                    supplier: document.getElementById('transactionSupplier').value,
+                    expiryDate: document.getElementById('transactionExpiry').value ? new Date(document.getElementById('transactionExpiry').value) : null,
+                    notes: document.getElementById('transactionNotes').value
+                };
+
+                const isEdit = transactionData.id > 0;
+                const response = isEdit 
+                    ? await api.put(`/api/transactions/${transactionData.id}`, transactionData)
+                    : await api.post('/api/transactions', transactionData);
+
+                if (response.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('transactionModal')).hide();
+                    showAlert(isEdit ? 'Транзакция обновлена' : 'Транзакция добавлена', 'success');
+                    loadTransactions();
+                } else {
+                    showAlert(response.message || 'Ошибка при сохранении транзакции', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при сохранении транзакции:', error);
+                showAlert('Ошибка при сохранении транзакции', 'danger');
+            }
+        }
+
+        async function deleteTransaction(id) {
+            if (confirm('Вы уверены, что хотите удалить эту транзакцию?')) {
+                try {
+                    const response = await api.delete(`/api/transactions/${id}`);
+                    if (response.success) {
+                        showAlert('Транзакция удалена', 'success');
+                        loadTransactions();
+                    } else {
+                        showAlert(response.message || 'Ошибка при удалении транзакции', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Ошибка при удалении транзакции:', error);
+                    showAlert('Ошибка при удалении транзакции', 'danger');
+                }
+            }
+        }
+
+        function exportTransactions() {
+            // Simple CSV export
+            const table = document.getElementById('transactionsTable');
+            const rows = table.querySelectorAll('tbody tr');
+            
+            if (rows.length === 0) {
+                showAlert('Нет данных для экспорта', 'warning');
+                return;
+            }
+            
+            let csv = 'ID,Дата,Продукт,Организация,Документ,Количество,Цена,Сумма,Поставщик\n';
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 1) { // Skip empty rows
+                    const rowData = Array.from(cells).slice(0, -1).map(cell => {
+                        return '"' + cell.textContent.replace(/"/g, '""') + '"';
+                    });
+                    csv += rowData.join(',') + '\n';
+                }
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'transactions_' + new Date().toISOString().slice(0, 10) + '.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Search on Enter key
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchTransactions();
+            }
+        });
+    </script>
+}
+
+

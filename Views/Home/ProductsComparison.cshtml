@@ -1,0 +1,748 @@
+@{
+    ViewData["Title"] = "Сравнение продуктов";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-balance-scale me-2"></i>Сравнение продуктов из разных систем
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Важно!</strong> Один и тот же продукт может иметь <strong>разные коды СВС в разных организациях</strong>. 
+                        Сначала выберите организацию, затем настройте коды СВС для её продуктов.
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label"><strong>Организация:</strong></label>
+                            <select class="form-select" id="organizationSelect" onchange="loadProducts()">
+                                <option value="">Все организации (общий справочник)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><strong>Режим отображения:</strong></label>
+                            <select class="form-select" id="displayMode" onchange="applyDisplayMode()">
+                                <option value="all">Показать все продукты</option>
+                                <option value="mapped">Только с кодом СВС</option>
+                                <option value="unmapped">Только без кода СВС</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label d-block">&nbsp;</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="showOnlyOrgProducts" onchange="applyDisplayMode()">
+                                <label class="form-check-label" for="showOnlyOrgProducts">
+                                    Только продукты с данными для этой организации
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3 g-2">
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Поиск по названию, коду или категории..." onkeyup="filterProducts()">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterStatus" onchange="filterProducts()">
+                                <option value="all">Все продукты</option>
+                                <option value="no_svs">❌ Без кода СВС</option>
+                                <option value="with_svs">✅ С кодом СВС</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select" id="sortBy" onchange="sortProducts()">
+                                <option value="name">По названию</option>
+                                <option value="code">По коду</option>
+                                <option value="category">По категории</option>
+                                <option value="date">По дате</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-success w-100" onclick="loadProducts()">
+                                <i class="fas fa-sync"></i> Обновить
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-2">
+                        <div class="col-md-12">
+                            <button class="btn btn-sm btn-info" onclick="exportToCSV()">
+                                <i class="fas fa-download me-1"></i>Экспорт в CSV
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="showOnlyUnmapped()">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Показать только без СВС
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Всего продуктов:</strong> <span id="totalProducts">-</span> | 
+                        <strong>Активных:</strong> <span id="activeProducts">-</span>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="productsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="cursor: pointer;" onclick="sortByColumn('externalId')">
+                                        ID внутр. <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th style="cursor: pointer;" onclick="sortByColumn('code')">
+                                        Код (Шифр) <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th style="cursor: pointer;" onclick="sortByColumn('svsCode')">
+                                        Код СВС <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th style="cursor: pointer;" onclick="sortByColumn('name')">
+                                        Название продукта <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th style="cursor: pointer;" onclick="sortByColumn('category')">
+                                        Категория <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th>Ед.изм.</th>
+                                    <th style="cursor: pointer;" onclick="sortByColumn('price')">
+                                        Цена <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th>Активен</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="9" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Загрузка...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Пагинация -->
+                    <div class="d-flex justify-content-between align-items-center mt-3 mb-5 flex-wrap" style="padding-bottom: 50px;">
+                        <div class="d-flex align-items-center mb-2 mb-md-0">
+                            <span class="me-2">Показать:</span>
+                            <select class="form-select form-select-sm me-3" id="pageSize" onchange="changePageSize()" style="width: 80px;">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <span class="text-muted small">
+                                <strong><span id="showingFrom">0</span>-<span id="showingTo">0</span></strong> из <span id="totalItems">0</span>
+                            </span>
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0" id="pagination">
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования продукта -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать продукт</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm">
+                    <input type="hidden" id="productId">
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="productName" class="form-label">Название продукта *</label>
+                                <input type="text" class="form-control" id="productName" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="productExternalId" class="form-label">ID внутр. (из системы питания)</label>
+                                <input type="text" class="form-control" id="productExternalId" readonly>
+                                <small class="text-muted">Заполняется автоматически при импорте</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="productCode" class="form-label">Код (Шифр) *</label>
+                                <input type="text" class="form-control" id="productCode" required>
+                                <small class="text-muted">Код из системы питания</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="productSvsCode" class="form-label">Код СВС</label>
+                                <input type="text" class="form-control bg-warning-subtle" id="productSvsCode" placeholder="Введите код СВС">
+                                <small class="text-muted"><strong>Заполните для сопоставления!</strong></small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="productCategory" class="form-label">Категория</label>
+                                <input type="text" class="form-control" id="productCategory">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="productUnit" class="form-label">Единица измерения</label>
+                                <input type="text" class="form-control" id="productUnit">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="productPrice" class="form-label">Цена</label>
+                                <input type="number" step="0.01" class="form-control" id="productPrice">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="productDescription" class="form-label">Описание</label>
+                                <input type="text" class="form-control" id="productDescription">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="productActive">
+                        <label class="form-check-label" for="productActive">
+                            Активен
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveProduct()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let allProducts = [];
+let filteredProducts = [];
+let currentPage = 1;
+let pageSize = 25;
+let currentSortColumn = 'name';
+let currentSortDirection = 'asc';
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadOrganizations();
+    loadProducts();
+});
+
+async function loadOrganizations() {
+    try {
+        const response = await fetch('/api/stores');
+        const result = await response.json();
+        
+        if (result && result.success) {
+            const select = document.getElementById('organizationSelect');
+            select.innerHTML = '<option value="">Все организации (общий справочник)</option>';
+            
+            result.data.forEach(org => {
+                const option = document.createElement('option');
+                option.value = org.id;
+                option.textContent = `${org.name} (${org.city})`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки организаций:', error);
+    }
+}
+
+async function loadProducts() {
+    try {
+        const selectedOrgId = document.getElementById('organizationSelect')?.value;
+        
+        console.log('Загрузка продуктов, организация:', selectedOrgId || 'Все');
+        
+        // Показываем индикатор загрузки
+        const tbody = document.querySelector('#productsTable tbody');
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center"><div class="spinner-border text-primary"></div> Загрузка...</td></tr>';
+        
+        // Загружаем ВСЕ продукты из базы
+        const response = await fetch('/api/products');
+        const result = await response.json();
+        
+        console.log('Ответ API products:', result);
+        
+        if (result && result.success) {
+            allProducts = result.data || [];
+            console.log(`Загружено ${allProducts.length} продуктов из базы`);
+            
+            // Если выбрана конкретная организация, загружаем коды СВС для неё
+            if (selectedOrgId) {
+                console.log(`Загрузка кодов СВС для организации ${selectedOrgId}...`);
+                const orgResponse = await fetch(`/api/organizationproducts?organizationId=${selectedOrgId}`);
+                const orgResult = await orgResponse.json();
+                
+                console.log('Коды СВС для организации:', orgResult);
+                
+                if (orgResult && orgResult.success) {
+                    // Создаем Map для быстрого поиска кодов СВС по productId
+                    const orgProductsMap = new Map();
+                    orgResult.data.forEach(op => {
+                        orgProductsMap.set(op.productId, {
+                            svsCode: op.svsCode,
+                            localPrice: op.localPrice
+                        });
+                    });
+                    
+                    // Обновляем продукты кодами СВС для этой организации
+                    allProducts = allProducts.map(product => {
+                        const orgData = orgProductsMap.get(product.id);
+                        return {
+                            ...product,
+                            svsCode: orgData ? orgData.svsCode : null,
+                            price: orgData && orgData.localPrice ? orgData.localPrice : product.price
+                        };
+                    });
+                    
+                    console.log(`Применено ${orgProductsMap.size} кодов СВС для организации`);
+                    
+                    // Показываем предупреждение если нет ни одного кода
+                    if (orgProductsMap.size === 0) {
+                        console.warn(`Для организации ${selectedOrgId} еще не настроены коды СВС`);
+                    }
+                }
+            }
+            
+            filteredProducts = [...allProducts]; // Создаем копию массива
+            currentPage = 1;
+            displayProducts();
+            updateStats();
+            updatePagination();
+            
+            if (allProducts.length === 0) {
+                console.warn('В базе нет продуктов! Импортируйте справочник продуктов (2_2.csv)');
+            }
+        } else {
+            console.error('Некорректный ответ сервера:', result);
+            allProducts = [];
+            filteredProducts = [];
+            displayProducts();
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки продуктов:', error);
+        const tbody = document.querySelector('#productsTable tbody');
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Ошибка загрузки данных. Проверьте консоль.</td></tr>';
+    }
+}
+
+function displayProducts() {
+    const tbody = document.querySelector('#productsTable tbody');
+    tbody.innerHTML = '';
+    
+    if (filteredProducts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">Продукты не найдены</td></tr>';
+        return;
+    }
+    
+    // Вычисляем диапазон для текущей страницы
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = pageSize === 'all' ? filteredProducts.length : Math.min(startIndex + parseInt(pageSize), filteredProducts.length);
+    const productsToShow = filteredProducts.slice(startIndex, endIndex);
+    
+    // Обновляем счетчики
+    document.getElementById('showingFrom').textContent = filteredProducts.length > 0 ? startIndex + 1 : 0;
+    document.getElementById('showingTo').textContent = endIndex;
+    document.getElementById('totalItems').textContent = filteredProducts.length;
+    
+    productsToShow.forEach(product => {
+        const row = document.createElement('tr');
+        
+        // Определяем, есть ли сопоставление с СВС
+        const hasSvsCode = product.svsCode && product.svsCode.trim() !== '';
+        const rowClass = hasSvsCode ? '' : 'table-warning';
+        
+        row.className = rowClass;
+        row.innerHTML = `
+            <td><small>${product.externalId || '-'}</small></td>
+            <td><code class="text-primary">${product.code || 'Нет кода'}</code></td>
+            <td>
+                ${hasSvsCode 
+                    ? `<code class="text-success">${product.svsCode}</code>` 
+                    : '<span class="badge bg-danger">Не задан</span>'}
+            </td>
+            <td><strong>${product.name}</strong></td>
+            <td><span class="badge bg-info">${product.category || '-'}</span></td>
+            <td>${product.unit || '-'}</td>
+            <td>${product.price ? formatCurrency(product.price) : '-'}</td>
+            <td>
+                <span class="badge ${product.isActive ? 'bg-success' : 'bg-secondary'}">
+                    ${product.isActive ? 'Да' : 'Нет'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editProduct(${product.id})" title="Добавить код СВС">
+                    <i class="fas fa-edit"></i> Редактировать
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function updateStats() {
+    try {
+        const total = allProducts.length;
+        const active = allProducts.filter(p => p.isActive).length;
+        const withSvsCode = allProducts.filter(p => p.svsCode && p.svsCode.trim() !== '').length;
+        
+        const totalEl = document.getElementById('totalProducts');
+        const activeEl = document.getElementById('activeProducts');
+        
+        if (totalEl) totalEl.textContent = total;
+        if (activeEl) activeEl.textContent = active;
+        
+        // Обновляем alert с дополнительной статистикой
+        const alertDiv = document.querySelector('.alert-info');
+        if (alertDiv) {
+            alertDiv.innerHTML = `
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Всего продуктов:</strong> ${total} | 
+                <strong>Активных:</strong> ${active} | 
+                <strong>С кодом СВС:</strong> <span class="text-success">${withSvsCode}</span> | 
+                <strong>Без кода СВС:</strong> <span class="text-danger">${total - withSvsCode}</span>
+            `;
+        }
+    } catch (error) {
+        console.error('Ошибка обновления статистики:', error);
+    }
+}
+
+function sortByColumn(column) {
+    // Если кликнули на ту же колонку - меняем направление
+    if (currentSortColumn === column) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSortColumn = column;
+        currentSortDirection = 'asc';
+    }
+    
+    filteredProducts.sort((a, b) => {
+        let aVal = a[column] || '';
+        let bVal = b[column] || '';
+        
+        // Для чисел
+        if (column === 'price') {
+            aVal = parseFloat(aVal) || 0;
+            bVal = parseFloat(bVal) || 0;
+            return currentSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        
+        // Для строк
+        const comparison = aVal.toString().localeCompare(bVal.toString(), 'ru');
+        return currentSortDirection === 'asc' ? comparison : -comparison;
+    });
+    
+    displayProducts();
+    updatePagination();
+}
+
+function sortProducts() {
+    const sortBy = document.getElementById('sortBy').value;
+    currentSortColumn = sortBy;
+    sortByColumn(sortBy);
+}
+
+function showOnlyUnmapped() {
+    document.getElementById('filterStatus').value = 'no_svs';
+    filterProducts();
+}
+
+function applyDisplayMode() {
+    const displayMode = document.getElementById('displayMode')?.value || 'all';
+    const showOnlyOrgProducts = document.getElementById('showOnlyOrgProducts')?.checked || false;
+    const selectedOrgId = document.getElementById('organizationSelect')?.value;
+    
+    console.log('Применение режима отображения:', displayMode, 'showOnlyOrgProducts:', showOnlyOrgProducts);
+    
+    // Начинаем с всех продуктов
+    let productsToShow = [...allProducts];
+    
+    // Если включен режим "только продукты организации"
+    if (showOnlyOrgProducts && selectedOrgId) {
+        productsToShow = productsToShow.filter(p => p.svsCode && p.svsCode.trim() !== '');
+        console.log(`Отфильтровано: ${productsToShow.length} продуктов с кодами СВС`);
+    }
+    
+    // Применяем режим отображения
+    if (displayMode === 'mapped') {
+        productsToShow = productsToShow.filter(p => p.svsCode && p.svsCode.trim() !== '');
+    } else if (displayMode === 'unmapped') {
+        productsToShow = productsToShow.filter(p => !p.svsCode || p.svsCode.trim() === '');
+    }
+    
+    filteredProducts = productsToShow;
+    currentPage = 1;
+    displayProducts();
+    updateStats();
+    updatePagination();
+}
+
+function filterProducts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value;
+    
+    filteredProducts = allProducts.filter(product => {
+        // Фильтр по поиску
+        const matchesSearch = searchTerm === '' || 
+            product.name.toLowerCase().includes(searchTerm) ||
+            (product.code && product.code.toLowerCase().includes(searchTerm)) ||
+            (product.svsCode && product.svsCode.toLowerCase().includes(searchTerm)) ||
+            (product.externalId && product.externalId.toLowerCase().includes(searchTerm)) ||
+            (product.category && product.category.toLowerCase().includes(searchTerm));
+        
+        // Фильтр по статусу
+        let matchesStatus = true;
+        if (statusFilter === 'no_svs') {
+            matchesStatus = !product.svsCode || product.svsCode.trim() === '';
+        } else if (statusFilter === 'with_svs') {
+            matchesStatus = product.svsCode && product.svsCode.trim() !== '';
+        }
+        
+        return matchesSearch && matchesStatus;
+    });
+    
+    currentPage = 1;
+    displayProducts();
+    updateStats();
+    updatePagination();
+}
+
+function changePageSize() {
+    try {
+        const pageSizeEl = document.getElementById('pageSize');
+        if (!pageSizeEl) return;
+        
+        const selectedSize = pageSizeEl.value;
+        pageSize = selectedSize === 'all' ? 'all' : parseInt(selectedSize);
+        currentPage = 1;
+        displayProducts();
+        updatePagination();
+    } catch (error) {
+        console.error('Ошибка изменения размера страницы:', error);
+    }
+}
+
+function goToPage(page) {
+    currentPage = page;
+    displayProducts();
+    updatePagination();
+}
+
+function updatePagination() {
+    const pagination = document.getElementById('pagination');
+    pagination.innerHTML = '';
+    
+    const totalPages = Math.ceil(filteredProducts.length / parseInt(pageSize));
+    
+    if (totalPages <= 1) {
+        return; // Не показываем пагинацию если одна страница
+    }
+    
+    // Кнопка "Назад"
+    pagination.innerHTML += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${currentPage - 1}); return false;">&laquo;</a>
+        </li>
+    `;
+    
+    // Показываем максимум 7 кнопок страниц
+    const maxButtons = 7;
+    let startPage = Math.max(1, currentPage - 3);
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+    
+    // Корректируем если приближаемся к концу
+    if (endPage - startPage < maxButtons - 1) {
+        startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+    
+    // Первая страница
+    if (startPage > 1) {
+        pagination.innerHTML += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="goToPage(1); return false;">1</a>
+            </li>
+        `;
+        if (startPage > 2) {
+            pagination.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+    
+    // Средние страницы
+    for (let i = startPage; i <= endPage; i++) {
+        pagination.innerHTML += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a>
+            </li>
+        `;
+    }
+    
+    // Последняя страница
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            pagination.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        pagination.innerHTML += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="goToPage(${totalPages}); return false;">${totalPages}</a>
+            </li>
+        `;
+    }
+    
+    // Кнопка "Вперед"
+    pagination.innerHTML += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToPage(${currentPage + 1}); return false;">&raquo;</a>
+        </li>
+    `;
+}
+
+async function editProduct(id) {
+    try {
+        const response = await fetch(`/api/products/${id}`);
+        const result = await response.json();
+        
+        if (result && result.success) {
+            const product = result.data;
+            
+            document.getElementById('productId').value = product.id;
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productExternalId').value = product.externalId || '';
+            document.getElementById('productCode').value = product.code || '';
+            document.getElementById('productSvsCode').value = product.svsCode || '';
+            document.getElementById('productCategory').value = product.category || '';
+            document.getElementById('productUnit').value = product.unit || '';
+            document.getElementById('productPrice').value = product.price || '';
+            document.getElementById('productDescription').value = product.description || '';
+            document.getElementById('productActive').checked = product.isActive;
+            
+            new bootstrap.Modal(document.getElementById('editProductModal')).show();
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки продукта:', error);
+        showAlert('Ошибка при загрузке продукта', 'danger');
+    }
+}
+
+async function saveProduct() {
+    const productId = parseInt(document.getElementById('productId').value);
+    const svsCode = document.getElementById('productSvsCode').value;
+    const selectedOrgId = document.getElementById('organizationSelect')?.value;
+    
+    const productData = {
+        id: productId,
+        name: document.getElementById('productName').value,
+        code: document.getElementById('productCode').value,
+        externalId: document.getElementById('productExternalId').value,
+        category: document.getElementById('productCategory').value,
+        unit: document.getElementById('productUnit').value,
+        price: parseFloat(document.getElementById('productPrice').value) || null,
+        description: document.getElementById('productDescription').value,
+        isActive: document.getElementById('productActive').checked
+    };
+    
+    try {
+        // 1. Обновляем основную информацию о продукте
+        const updateResponse = await fetch(`/api/products/${productId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData)
+        });
+        
+        const updateResult = await updateResponse.json();
+        
+        if (!updateResult || !updateResult.success) {
+            showAlert('Ошибка при обновлении продукта', 'danger');
+            return;
+        }
+        
+        // 2. Если выбрана конкретная организация, сохраняем код СВС для неё
+        if (selectedOrgId && svsCode) {
+            const orgProductData = {
+                organizationId: parseInt(selectedOrgId),
+                productId: productId,
+                svsCode: svsCode,
+                localPrice: parseFloat(document.getElementById('productPrice').value) || null,
+                isActive: true
+            };
+            
+            const orgResponse = await fetch('/api/organizationproducts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orgProductData)
+            });
+            
+            const orgResult = await orgResponse.json();
+            console.log('Результат сохранения кода СВС для организации:', orgResult);
+        } else if (!selectedOrgId) {
+            // Если организация не выбрана, сохраняем общий код СВС
+            productData.svsCode = svsCode;
+            await fetch(`/api/products/${productId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(productData)
+            });
+        }
+        
+        bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
+        showAlert('Продукт обновлен', 'success');
+        loadProducts();
+    } catch (error) {
+        console.error('Ошибка сохранения продукта:', error);
+        showAlert('Ошибка при сохранении продукта', 'danger');
+    }
+}
+
+function exportToCSV() {
+    const rows = document.querySelectorAll('#productsTable tbody tr');
+    if (rows.length === 0 || rows[0].cells.length === 1) {
+        showAlert('Нет данных для экспорта', 'warning');
+        return;
+    }
+    
+    let csv = 'ID внутр.,Код (Шифр),Код СВС,Название,Категория,Единица,Цена,Активен\n';
+    
+    allProducts.forEach(product => {
+        csv += `"${product.externalId || ''}","${product.code || ''}","${product.svsCode || ''}","${product.name}","${product.category || ''}","${product.unit || ''}",${product.price || 0},${product.isActive ? 'Да' : 'Нет'}\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `products_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+}
+</script>
+

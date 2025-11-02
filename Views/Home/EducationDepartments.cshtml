@@ -1,0 +1,342 @@
+@{
+    ViewData["Title"] = "УО и организации";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-building me-2"></i>Управления образования (УО) и привязанные организации
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#educationDepartmentModal" onclick="openEducationDepartmentModal()">
+                                <i class="fas fa-plus me-2"></i>Добавить УО
+                            </button>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="badge bg-info fs-6" id="uoCount">УО: 0</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Название УО</th>
+                                    <th>Город</th>
+                                    <th>Адрес</th>
+                                    <th>Директор</th>
+                                    <th>Активно</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="educationDepartmentsTableBody">
+                                <tr><td colspan="6" class="text-center">Загрузка...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4 class="mt-4">Организации в выбранном УО</h4>
+                    <div class="mb-3">
+                        <label for="selectedEducationDepartment" class="form-label">Выберите УО для просмотра организаций</label>
+                        <select class="form-select" id="selectedEducationDepartment" onchange="loadOrganizationsForSelectedDepartment()">
+                            <option value="">Выберите УО</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Название организации</th>
+                                    <th>Город</th>
+                                    <th>Адрес</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="organizationsTableBody">
+                                <tr><td colspan="4" class="text-center">Выберите УО для просмотра организаций.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Education Department Modal -->
+<div class="modal fade" id="educationDepartmentModal" tabindex="-1" aria-labelledby="educationDepartmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="educationDepartmentModalLabel">Добавить/Редактировать УО</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="educationDepartmentForm">
+                    <input type="hidden" id="educationDepartmentId">
+                    <div class="mb-3">
+                        <label for="educationDepartmentName" class="form-label">Название УО *</label>
+                        <input type="text" class="form-control" id="educationDepartmentName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="educationDepartmentCity" class="form-label">Город</label>
+                        <input type="text" class="form-control" id="educationDepartmentCity">
+                    </div>
+                    <div class="mb-3">
+                        <label for="educationDepartmentAddress" class="form-label">Адрес</label>
+                        <input type="text" class="form-control" id="educationDepartmentAddress">
+                    </div>
+                    <div class="mb-3">
+                        <label for="educationDepartmentPhone" class="form-label">Телефон</label>
+                        <input type="text" class="form-control" id="educationDepartmentPhone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="educationDepartmentEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="educationDepartmentEmail">
+                    </div>
+                    <div class="mb-3">
+                        <label for="educationDepartmentDirector" class="form-label">Имя директора</label>
+                        <input type="text" class="form-control" id="educationDepartmentDirector">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="educationDepartmentIsActive">
+                        <label class="form-check-label" for="educationDepartmentIsActive">
+                            Активно
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </form>
+                <div id="educationDepartmentFormResult" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            console.log('DOMContentLoaded: начало выполнения');
+            // Проверяем, что api доступен, если нет - создаем
+            if (typeof api === 'undefined') {
+                console.error('API не определен! Проверяем ApiClient...');
+                if (typeof ApiClient === 'undefined') {
+                    console.error('ApiClient не определен! Перезагрузите страницу.');
+                    return;
+                }
+                console.log('Создаем новый экземпляр ApiClient...');
+                window.api = new ApiClient();
+            }
+            console.log('API доступен:', api);
+            
+            console.log('DOMContentLoaded: вызываем loadEducationDepartments');
+            await loadEducationDepartments();
+
+            document.getElementById('educationDepartmentForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const id = document.getElementById('educationDepartmentId').value;
+                const name = document.getElementById('educationDepartmentName').value;
+                const city = document.getElementById('educationDepartmentCity').value;
+                const address = document.getElementById('educationDepartmentAddress').value;
+                const phone = document.getElementById('educationDepartmentPhone').value;
+                const email = document.getElementById('educationDepartmentEmail').value;
+                const directorName = document.getElementById('educationDepartmentDirector').value;
+                const isActive = document.getElementById('educationDepartmentIsActive').checked;
+                const resultDiv = document.getElementById('educationDepartmentFormResult');
+
+                const payload = { name, city, address, phone, email, directorName, isActive };
+                console.log('Отправляем данные:', payload);
+
+                try {
+                    if (typeof api === 'undefined') {
+                        console.error('API не определен в обработчике формы! Создаем новый экземпляр...');
+                        window.api = new ApiClient();
+                    }
+                    
+                    let response;
+                    if (id) {
+                        console.log('Обновляем УО с ID:', id);
+                        response = await api.put(`/api/educationdepartments/${id}`, payload);
+                    } else {
+                        console.log('Создаем новое УО');
+                        response = await api.post('/api/educationdepartments', payload);
+                    }
+                    console.log('Получен ответ:', response);
+
+                    if (response.success) {
+                        resultDiv.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('educationDepartmentModal'));
+                        if (modal) {
+                            modal.hide();
+                        } else {
+                            // Если modal не найден, закрываем принудительно
+                            const modalElement = document.getElementById('educationDepartmentModal');
+                            if (modalElement) {
+                                modalElement.classList.remove('show');
+                                modalElement.style.display = 'none';
+                                document.body.classList.remove('modal-open');
+                                const backdrop = document.querySelector('.modal-backdrop');
+                                if (backdrop) {
+                                    backdrop.remove();
+                                }
+                            }
+                        }
+                        await loadEducationDepartments();
+                    } else {
+                        resultDiv.innerHTML = `<div class="alert alert-danger">${response.message || 'Ошибка сохранения.'}</div>`;
+                    }
+                } catch (error) {
+                    console.error('Ошибка сохранения УО:', error);
+                    resultDiv.innerHTML = `<div class="alert alert-danger">Произошла ошибка: ${error.message || 'Неизвестная ошибка.'}</div>`;
+                }
+            });
+        });
+
+        async function loadEducationDepartments() {
+            console.log('loadEducationDepartments: начало выполнения');
+            try {
+                if (typeof api === 'undefined') {
+                    console.error('API не определен в loadEducationDepartments! Создаем новый экземпляр...');
+                    window.api = new ApiClient();
+                }
+                console.log('loadEducationDepartments: отправляем запрос к API');
+                const response = await api.get('/api/educationdepartments');
+                console.log('loadEducationDepartments: получен ответ:', response);
+                
+                const tableBody = document.getElementById('educationDepartmentsTableBody');
+                const selectElement = document.getElementById('selectedEducationDepartment');
+                console.log('loadEducationDepartments: элементы найдены:', { tableBody, selectElement });
+                
+                tableBody.innerHTML = '';
+                selectElement.innerHTML = '<option value="">Выберите УО</option>';
+
+                if (response.success && response.data.length > 0) {
+                    console.log('loadEducationDepartments: обрабатываем данные, количество:', response.data.length);
+                    // Обновляем счетчик УО
+                    const uoCountElement = document.getElementById('uoCount');
+                    if (uoCountElement) {
+                        uoCountElement.textContent = `УО: ${response.data.length}`;
+                    }
+                    
+                    response.data.forEach(dep => {
+                        console.log('loadEducationDepartments: добавляем строку для УО:', dep.name);
+                        const row = tableBody.insertRow();
+                        row.insertCell().textContent = dep.name;
+                        row.insertCell().textContent = dep.city || '';
+                        row.insertCell().textContent = dep.address || '';
+                        row.insertCell().textContent = dep.directorName || '';
+                        row.insertCell().textContent = dep.isActive ? 'Да' : 'Нет';
+
+                        const actionsCell = row.insertCell();
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'btn btn-sm btn-info me-2';
+                        editBtn.textContent = 'Редактировать';
+                        editBtn.onclick = () => openEducationDepartmentModal(dep);
+                        actionsCell.appendChild(editBtn);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'btn btn-sm btn-danger';
+                        deleteBtn.textContent = 'Удалить';
+                        deleteBtn.onclick = () => deleteEducationDepartment(dep.id);
+                        actionsCell.appendChild(deleteBtn);
+
+                        const option = document.createElement('option');
+                        option.value = dep.id;
+                        option.textContent = `${dep.name} (${dep.city || 'Без города'})`;
+                        selectElement.appendChild(option);
+                    });
+                } else {
+                    console.log('loadEducationDepartments: нет данных или ошибка в ответе');
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Нет данных об УО.</td></tr>';
+                    // Обновляем счетчик УО
+                    const uoCountElement = document.getElementById('uoCount');
+                    if (uoCountElement) {
+                        uoCountElement.textContent = 'УО: 0';
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке УО:', error);
+                document.getElementById('educationDepartmentsTableBody').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Ошибка загрузки УО.</td></tr>';
+            }
+        }
+
+        function openEducationDepartmentModal(dep = null) {
+            const modalLabel = document.getElementById('educationDepartmentModalLabel');
+            const form = document.getElementById('educationDepartmentForm');
+            form.reset();
+            document.getElementById('educationDepartmentFormResult').innerHTML = '';
+
+            if (dep) {
+                modalLabel.textContent = 'Редактировать УО';
+                document.getElementById('educationDepartmentId').value = dep.id;
+                document.getElementById('educationDepartmentName').value = dep.name;
+                document.getElementById('educationDepartmentCity').value = dep.city || '';
+                document.getElementById('educationDepartmentAddress').value = dep.address || '';
+                document.getElementById('educationDepartmentPhone').value = dep.phone || '';
+                document.getElementById('educationDepartmentEmail').value = dep.email || '';
+                document.getElementById('educationDepartmentDirector').value = dep.directorName || '';
+                document.getElementById('educationDepartmentIsActive').checked = dep.isActive;
+            } else {
+                modalLabel.textContent = 'Добавить УО';
+                document.getElementById('educationDepartmentId').value = '';
+                document.getElementById('educationDepartmentIsActive').checked = true; // Default to active
+            }
+            const modal = new bootstrap.Modal(document.getElementById('educationDepartmentModal'));
+            modal.show();
+        }
+
+        async function deleteEducationDepartment(id) {
+            if (!confirm('Вы уверены, что хотите удалить это УО?')) {
+                return;
+            }
+            try {
+                const response = await api.delete(`/api/educationdepartments/${id}`);
+                if (response.success) {
+                    alert(response.message);
+                    await loadEducationDepartments();
+                } else {
+                    alert(response.message || 'Ошибка удаления УО.');
+                }
+            } catch (error) {
+                console.error('Ошибка удаления УО:', error);
+                alert('Произошла ошибка при удалении УО.');
+            }
+        }
+
+        async function loadOrganizationsForSelectedDepartment() {
+            const educationDepartmentId = document.getElementById('selectedEducationDepartment').value;
+            const tableBody = document.getElementById('organizationsTableBody');
+            tableBody.innerHTML = ''; // Clear previous data
+
+            if (!educationDepartmentId) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center">Выберите УО для просмотра организаций.</td></tr>';
+                return;
+            }
+
+            try {
+                const response = await api.get(`/api/educationdepartments/${educationDepartmentId}/organizations`);
+                if (response.success && response.data.length > 0) {
+                    response.data.forEach(org => {
+                        const row = tableBody.insertRow();
+                        row.insertCell().textContent = org.name;
+                        row.insertCell().textContent = org.city || '';
+                        row.insertCell().textContent = org.address || '';
+                        const actionsCell = row.insertCell();
+                        // Add actions for organizations if needed (e.g., edit, view details)
+                        actionsCell.textContent = 'Действия...'; // Placeholder
+                    });
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center">Нет организаций, привязанных к этому УО.</td></tr>';
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке организаций для УО:', error);
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Ошибка загрузки организаций.</td></tr>';
+            }
+        }
+    </script>
+}

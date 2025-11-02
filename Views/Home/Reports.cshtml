@@ -1,0 +1,484 @@
+@{
+    ViewData["Title"] = "Отчеты";
+}
+
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-bar me-2"></i>Отчеты и аналитика</h2>
+        <hr>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="totalTransactions">-</h4>
+                        <p class="card-text">Всего транзакций</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-receipt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="totalAmount">-</h4>
+                        <p class="card-text">Общая сумма</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-coins fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="totalProducts">-</h4>
+                        <p class="card-text">Уникальных продуктов</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-box fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="totalStores">-</h4>
+                        <p class="card-text">Активных магазинов</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-store fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>Фильтры отчета
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="reportDateFrom" class="form-label">Дата от</label>
+                            <input type="date" class="form-control" id="reportDateFrom">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="reportDateTo" class="form-label">Дата до</label>
+                            <input type="date" class="form-control" id="reportDateTo">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="reportProduct" class="form-label">Продукт</label>
+                            <select class="form-select" id="reportProduct">
+                                <option value="">Все продукты</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="reportStore" class="form-label">Организация</label>
+                            <select class="form-select" id="reportStore">
+                                <option value="">Все организации</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid">
+                    <button class="btn btn-primary" onclick="generateReport()">
+                        <i class="fas fa-chart-line me-2"></i>Сгенерировать отчет
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-download me-2"></i>Экспорт данных
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" onclick="exportToCsv()">
+                        <i class="fas fa-file-csv me-2"></i>Экспорт в CSV
+                    </button>
+                    <button class="btn btn-info" onclick="exportToJson()">
+                        <i class="fas fa-file-code me-2"></i>Экспорт в JSON
+                    </button>
+                    <button class="btn btn-warning" onclick="printReport()">
+                        <i class="fas fa-print me-2"></i>Печать отчета
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>Детализированный отчет
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="reportTable">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Продукт</th>
+                                <th>Магазин</th>
+                                <th>Количество</th>
+                                <th>Цена</th>
+                                <th>Сумма</th>
+                                <th>Поставщик</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" class="text-center">Выберите фильтры и сгенерируйте отчет</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Статистика по продуктам
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="productStats">
+                    <p class="text-muted">Статистика будет отображена после генерации отчета</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Статистика по магазинам
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="storeStats">
+                    <p class="text-muted">Статистика будет отображена после генерации отчета</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            loadReportData();
+            loadProductsForReport();
+            loadStoresForReport();
+            
+            // Set default date range (last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            
+            document.getElementById('reportDateFrom').value = thirtyDaysAgo.toISOString().slice(0, 10);
+            document.getElementById('reportDateTo').value = today.toISOString().slice(0, 10);
+        });
+
+        async function loadReportData() {
+            try {
+                const [transactionsResponse, productsResponse, storesResponse] = await Promise.all([
+                    api.get('/api/transactions'),
+                    api.get('/api/products'),
+                    api.get('/api/stores')
+                ]);
+
+                if (transactionsResponse.success) {
+                    const transactions = transactionsResponse.data;
+                    const totalAmount = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
+                    const uniqueProducts = new Set(transactions.map(t => t.productId)).size;
+                    const activeStores = storesResponse.success ? storesResponse.data.filter(s => s.isActive).length : 0;
+
+                    document.getElementById('totalTransactions').textContent = transactions.length;
+                    document.getElementById('totalAmount').textContent = formatCurrency(totalAmount);
+                    document.getElementById('totalProducts').textContent = uniqueProducts;
+                    document.getElementById('totalStores').textContent = activeStores;
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке данных отчета:', error);
+                showAlert('Ошибка при загрузке данных отчета', 'danger');
+            }
+        }
+
+        async function loadProductsForReport() {
+            try {
+                const response = await api.get('/api/products');
+                if (response && response.success) {
+                    const select = document.getElementById('reportProduct');
+                    select.innerHTML = '<option value="">Все продукты</option>';
+                    response.data.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.textContent = product.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке продуктов:', error);
+                // Не показываем ошибку пользователю, просто логируем
+            }
+        }
+
+        async function loadStoresForReport() {
+            try {
+                const response = await api.get('/api/stores');
+                if (response && response.success) {
+                    const select = document.getElementById('reportStore');
+                    select.innerHTML = '<option value="">Все организации</option>';
+                    response.data.forEach(store => {
+                        const option = document.createElement('option');
+                        option.value = store.id;
+                        option.textContent = store.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке магазинов:', error);
+                // Не показываем ошибку пользователю, просто логируем
+            }
+        }
+
+        async function generateReport() {
+            try {
+                const dateFrom = document.getElementById('reportDateFrom').value;
+                const dateTo = document.getElementById('reportDateTo').value;
+                const productId = document.getElementById('reportProduct').value;
+                const storeId = document.getElementById('reportStore').value;
+
+                let url = '/api/data/transactions';
+                const params = new URLSearchParams();
+                
+                if (dateFrom) params.append('dateFrom', dateFrom);
+                if (dateTo) params.append('dateTo', dateTo);
+                if (productId) params.append('productId', productId);
+                if (storeId) params.append('storeId', storeId);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+
+                const response = await api.get(url);
+                
+                if (response.success) {
+                    displayReport(response.data);
+                    generateStatistics(response.data);
+                } else {
+                    showAlert('Ошибка при генерации отчета', 'danger');
+                }
+            } catch (error) {
+                console.error('Ошибка при генерации отчета:', error);
+                showAlert('Ошибка при генерации отчета', 'danger');
+            }
+        }
+
+        function displayReport(transactions) {
+            const tbody = document.querySelector('#reportTable tbody');
+            tbody.innerHTML = '';
+
+            if (transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Нет данных для отображения</td></tr>';
+                return;
+            }
+
+            transactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDate(transaction.transactionDate)}</td>
+                    <td>${transaction.product?.name || 'Неизвестно'}</td>
+                    <td>${transaction.store?.name || 'Неизвестно'}</td>
+                    <td>${formatNumber(transaction.quantity, 3)}</td>
+                    <td>${formatCurrency(transaction.price)}</td>
+                    <td>${formatCurrency(transaction.totalAmount)}</td>
+                    <td>${transaction.supplier || '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function generateStatistics(transactions) {
+            // Product statistics
+            const productStats = {};
+            const storeStats = {};
+
+            transactions.forEach(transaction => {
+                const productName = transaction.product?.name || 'Неизвестно';
+                const storeName = transaction.store?.name || 'Неизвестно';
+
+                if (!productStats[productName]) {
+                    productStats[productName] = { count: 0, amount: 0 };
+                }
+                productStats[productName].count += transaction.quantity;
+                productStats[productName].amount += transaction.totalAmount;
+
+                if (!storeStats[storeName]) {
+                    storeStats[storeName] = { count: 0, amount: 0 };
+                }
+                storeStats[storeName].count += 1;
+                storeStats[storeName].amount += transaction.totalAmount;
+            });
+
+            // Display product statistics
+            const productStatsDiv = document.getElementById('productStats');
+            productStatsDiv.innerHTML = '';
+            
+            Object.entries(productStats)
+                .sort((a, b) => b[1].amount - a[1].amount)
+                .slice(0, 5)
+                .forEach(([product, stats]) => {
+                    const div = document.createElement('div');
+                    div.className = 'mb-2';
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <small>${product}</small>
+                            <small>${formatCurrency(stats.amount)}</small>
+                        </div>
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar" style="width: ${(stats.amount / Math.max(...Object.values(productStats).map(s => s.amount))) * 100}%"></div>
+                        </div>
+                    `;
+                    productStatsDiv.appendChild(div);
+                });
+
+            // Display store statistics
+            const storeStatsDiv = document.getElementById('storeStats');
+            storeStatsDiv.innerHTML = '';
+            
+            Object.entries(storeStats)
+                .sort((a, b) => b[1].amount - a[1].amount)
+                .slice(0, 5)
+                .forEach(([store, stats]) => {
+                    const div = document.createElement('div');
+                    div.className = 'mb-2';
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <small>${store}</small>
+                            <small>${formatCurrency(stats.amount)}</small>
+                        </div>
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: ${(stats.amount / Math.max(...Object.values(storeStats).map(s => s.amount))) * 100}%"></div>
+                        </div>
+                    `;
+                    storeStatsDiv.appendChild(div);
+                });
+        }
+
+        function exportToCsv() {
+            const table = document.getElementById('reportTable');
+            const rows = table.querySelectorAll('tbody tr');
+            
+            if (rows.length === 0 || rows[0].textContent.includes('Нет данных')) {
+                showAlert('Нет данных для экспорта', 'warning');
+                return;
+            }
+            
+            let csv = 'Дата,Продукт,Магазин,Количество,Цена,Сумма,Поставщик\n';
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 1) {
+                    const rowData = Array.from(cells).map(cell => {
+                        return '"' + cell.textContent.replace(/"/g, '""') + '"';
+                    });
+                    csv += rowData.join(',') + '\n';
+                }
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'report_' + new Date().toISOString().slice(0, 10) + '.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportToJson() {
+            const table = document.getElementById('reportTable');
+            const rows = table.querySelectorAll('tbody tr');
+            
+            if (rows.length === 0 || rows[0].textContent.includes('Нет данных')) {
+                showAlert('Нет данных для экспорта', 'warning');
+                return;
+            }
+            
+            const data = [];
+            const headers = ['Дата', 'Продукт', 'Магазин', 'Количество', 'Цена', 'Сумма', 'Поставщик'];
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 1) {
+                    const rowData = {};
+                    Array.from(cells).forEach((cell, index) => {
+                        rowData[headers[index]] = cell.textContent;
+                    });
+                    data.push(rowData);
+                }
+            });
+            
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'report_' + new Date().toISOString().slice(0, 10) + '.json');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function printReport() {
+            window.print();
+        }
+    </script>
+}
+
+

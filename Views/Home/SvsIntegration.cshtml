@@ -1,0 +1,424 @@
+@{
+    ViewData["Title"] = "Интеграция с СВС";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-exchange-alt me-2"></i>Интеграция с системой СВС
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Интеграция с СВС:</strong> Получение справочника материалов из СВС и автоматическое сопоставление с продуктами системы питания.
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Получение справочника СВС</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="svsMaterialsForm">
+                                        <div class="mb-3">
+                                            <label for="organizationSelect" class="form-label">Организация (опционально)</label>
+                                            <select class="form-select" id="organizationSelect">
+                                                <option value="">Все организации</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="svsMaterialsJson" class="form-label">JSON справочника СВС</label>
+                                            <textarea class="form-control" id="svsMaterialsJson" rows="8" 
+                                                placeholder='{"MatItem":[{"GroupMatId":1492,"MatId":1377,"MeasureId":1,"NameGroupMat":"Банка","NameMat":"Банка пластик","NameMeasure":"шт"}]}'></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-sync me-1"></i>Обработать справочник СВС
+                                        </button>
+                                    </form>
+                                    <div id="svsResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Статистика сопоставлений</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="mappingStats">
+                                        <div class="text-center">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Загрузка...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">Результаты сопоставления</h5>
+                                    <div>
+                                        <button class="btn btn-sm btn-primary" onclick="refreshMappings()">
+                                            <i class="fas fa-sync me-1"></i>Обновить
+                                        </button>
+                                        <button class="btn btn-sm btn-success" onclick="exportMappings()">
+                                            <i class="fas fa-download me-1"></i>Экспорт JSON
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover" id="mappingsTable">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Продукт</th>
+                                                    <th>Код продукта</th>
+                                                    <th>Код СВС</th>
+                                                    <th>Название СВС</th>
+                                                    <th>Группа СВС</th>
+                                                    <th>Ед.изм. СВС</th>
+                                                    <th>Уверенность</th>
+                                                    <th>Статус</th>
+                                                    <th>Действия</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td colspan="9" class="text-center">
+                                                        <div class="spinner-border text-primary" role="status">
+                                                            <span class="visually-hidden">Загрузка...</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для редактирования сопоставления -->
+<div class="modal fade" id="editMappingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать сопоставление</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editMappingForm">
+                    <input type="hidden" id="mappingProductId">
+                    <input type="hidden" id="mappingSvsMatId">
+                    
+                    <div class="mb-3">
+                        <label for="mappingProductName" class="form-label">Продукт</label>
+                        <input type="text" class="form-control" id="mappingProductName" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="mappingSvsCode" class="form-label">Код СВС</label>
+                        <input type="text" class="form-control" id="mappingSvsCode" placeholder="Введите код СВС">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="mappingSvsName" class="form-label">Название в СВС</label>
+                        <input type="text" class="form-control" id="mappingSvsName" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="mappingNotes" class="form-label">Примечания</label>
+                        <textarea class="form-control" id="mappingNotes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveMapping()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentMappings = [];
+let selectedOrganizationId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadOrganizations();
+    loadMappingStats();
+    loadMappings();
+});
+
+async function loadOrganizations() {
+    try {
+        const response = await fetch('/api/stores');
+        const result = await response.json();
+        
+        if (result && result.success) {
+            const select = document.getElementById('organizationSelect');
+            select.innerHTML = '<option value="">Все организации</option>';
+            
+            result.data.forEach(org => {
+                const option = document.createElement('option');
+                option.value = org.id;
+                option.textContent = `${org.name} (${org.city})`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки организаций:', error);
+    }
+}
+
+document.getElementById('svsMaterialsForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const jsonText = document.getElementById('svsMaterialsJson').value;
+    const organizationId = document.getElementById('organizationSelect').value;
+    
+    if (!jsonText.trim()) {
+        showResult('Ошибка: Введите JSON справочника СВС', 'danger');
+        return;
+    }
+    
+    try {
+        const svsData = JSON.parse(jsonText);
+        
+        const response = await fetch(`/api/svs/materials${organizationId ? `?organizationId=${organizationId}` : ''}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(svsData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showResult(`
+                <strong>Справочник СВС обработан успешно!</strong><br>
+                Всего продуктов: ${result.totalProducts}<br>
+                Автоматически сопоставлено: ${result.autoMapped}<br>
+                Требует ручного сопоставления: ${result.unmapped}
+            `, 'success');
+            
+            loadMappings();
+            loadMappingStats();
+        } else {
+            showResult(`Ошибка: ${result.message}`, 'danger');
+        }
+    } catch (error) {
+        showResult(`Ошибка парсинга JSON: ${error.message}`, 'danger');
+    }
+});
+
+async function loadMappingStats() {
+    try {
+        const organizationId = document.getElementById('organizationSelect').value;
+        const response = await fetch(`/api/svs/stats${organizationId ? `?organizationId=${organizationId}` : ''}`);
+        const result = await response.json();
+        
+        if (result && result.success) {
+            const stats = result.data;
+            document.getElementById('mappingStats').innerHTML = `
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h4>${stats.totalProducts}</h4>
+                                <p class="mb-0">Всего продуктов</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h4>${stats.mappedProducts}</h4>
+                                <p class="mb-0">Сопоставлено</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body">
+                                <h4>${stats.unmappedProducts}</h4>
+                                <p class="mb-0">Не сопоставлено</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h4>${Math.round(stats.averageConfidence * 100)}%</h4>
+                                <p class="mb-0">Средняя уверенность</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки статистики:', error);
+    }
+}
+
+async function loadMappings() {
+    try {
+        const organizationId = document.getElementById('organizationSelect').value;
+        const response = await fetch(`/api/svs/mappings${organizationId ? `?organizationId=${organizationId}` : ''}`);
+        const result = await response.json();
+        
+        if (result && result.success) {
+            currentMappings = result.data;
+            displayMappings();
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки сопоставлений:', error);
+    }
+}
+
+function displayMappings() {
+    const tbody = document.querySelector('#mappingsTable tbody');
+    tbody.innerHTML = '';
+    
+    currentMappings.forEach(mapping => {
+        const row = document.createElement('tr');
+        const hasMapping = mapping.svsCode && mapping.svsCode.trim() !== '';
+        const confidence = mapping.confidence ? Math.round(mapping.confidence * 100) : 0;
+        
+        row.innerHTML = `
+            <td><strong>${mapping.productName}</strong></td>
+            <td><code>${mapping.productCode || '-'}</code></td>
+            <td>${hasMapping ? `<code class="text-success">${mapping.svsCode}</code>` : '<span class="badge bg-danger">Не задан</span>'}</td>
+            <td>${mapping.svsName || '-'}</td>
+            <td>${mapping.svsGroupName || '-'}</td>
+            <td>${mapping.svsMeasure || '-'}</td>
+            <td>
+                ${mapping.isAutoMapped ? `<span class="badge bg-${confidence > 80 ? 'success' : confidence > 60 ? 'warning' : 'danger'}">${confidence}%</span>` : '-'}
+            </td>
+            <td>
+                <span class="badge ${hasMapping ? 'bg-success' : 'bg-danger'}">
+                    ${hasMapping ? 'Сопоставлен' : 'Не сопоставлен'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editMapping(${mapping.productId}, '${mapping.productName}', '${mapping.svsCode || ''}', '${mapping.svsName || ''}', ${mapping.svsMatId || 'null'})">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </td>
+        `;
+        
+        if (!hasMapping) {
+            row.classList.add('table-warning');
+        }
+        
+        tbody.appendChild(row);
+    });
+}
+
+function editMapping(productId, productName, svsCode, svsName, svsMatId) {
+    document.getElementById('mappingProductId').value = productId;
+    document.getElementById('mappingSvsMatId').value = svsMatId || '';
+    document.getElementById('mappingProductName').value = productName;
+    document.getElementById('mappingSvsCode').value = svsCode;
+    document.getElementById('mappingSvsName').value = svsName;
+    document.getElementById('mappingNotes').value = '';
+    
+    new bootstrap.Modal(document.getElementById('editMappingModal')).show();
+}
+
+async function saveMapping() {
+    const productId = parseInt(document.getElementById('mappingProductId').value);
+    const svsMatId = parseInt(document.getElementById('mappingSvsMatId').value) || 0;
+    const svsCode = document.getElementById('mappingSvsCode').value;
+    const organizationId = document.getElementById('organizationSelect').value;
+    
+    if (!svsCode.trim()) {
+        alert('Введите код СВС');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/svs/mappings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                productId: productId,
+                svsMatId: svsMatId,
+                svsCode: svsCode,
+                organizationId: organizationId ? parseInt(organizationId) : null,
+                notes: document.getElementById('mappingNotes').value
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editMappingModal')).hide();
+            showAlert('Сопоставление сохранено', 'success');
+            loadMappings();
+            loadMappingStats();
+        } else {
+            showAlert(`Ошибка: ${result.message}`, 'danger');
+        }
+    } catch (error) {
+        console.error('Ошибка сохранения сопоставления:', error);
+        showAlert('Ошибка при сохранении сопоставления', 'danger');
+    }
+}
+
+async function exportMappings() {
+    try {
+        const organizationId = document.getElementById('organizationSelect').value;
+        const url = `/api/svs/export${organizationId ? `?organizationId=${organizationId}` : ''}`;
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `svs_mappings_${organizationId || 'global'}_${new Date().toISOString().slice(0, 10)}.json`;
+        link.click();
+    } catch (error) {
+        console.error('Ошибка экспорта:', error);
+        showAlert('Ошибка при экспорте', 'danger');
+    }
+}
+
+function refreshMappings() {
+    loadMappings();
+    loadMappingStats();
+}
+
+function showResult(message, type) {
+    const resultDiv = document.getElementById('svsResult');
+    resultDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.insertBefore(alertDiv, document.body.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>

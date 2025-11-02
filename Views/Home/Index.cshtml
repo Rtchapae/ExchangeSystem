@@ -1,0 +1,126 @@
+@{
+    ViewData["Title"] = "Главная страница";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-sign-in-alt me-2"></i>Вход в систему
+                </h4>
+            </div>
+            <div class="card-body">
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="loginUsername" class="form-label">Имя пользователя</label>
+                        <input type="text" class="form-control" id="loginUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="loginPassword" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="loginPassword" name="password" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-2"></i>Войти
+                        </button>
+                    </div>
+                </form>
+                <div id="loginError" class="alert alert-danger mt-3" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Информация о системе
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>Система обмена данными предназначена для:</p>
+                <ul>
+                    <li>Импорта данных из CSV и DBF файлов</li>
+                    <li>Управления продуктами и магазинами</li>
+                    <li>Обработки транзакций</li>
+                    <li>Объединения данных с генерацией ключей</li>
+                    <li>Создания отчетов</li>
+                </ul>
+                <p class="mb-0">
+                    <strong>Тестовые данные для входа:</strong><br>
+                    Имя пользователя: <code>admin</code><br>
+                    Пароль: <code>admin123</code>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let isSubmitting = false;
+        
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Prevent double submission
+            if (isSubmitting) {
+                console.log('Already submitting, ignoring duplicate request');
+                return;
+            }
+            
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const errorDiv = document.getElementById('loginError');
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            
+            // Validate input before sending
+            if (!username || !password) {
+                errorDiv.textContent = 'Пожалуйста, заполните все поля';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            isSubmitting = true;
+            
+            // Disable button and show loading
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Вход...';
+            errorDiv.style.display = 'none';
+            
+            try {
+                console.log('Attempting login for user:', username);
+                
+                const response = await fetch('/api/auth/web-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                console.log('Response status:', response.status);
+                
+                const result = await response.json();
+                console.log('Login result:', result);
+                
+                if (response.ok && result.success) {
+                    localStorage.setItem('token', result.token);
+                    window.location.href = '/Home/Dashboard';
+                } else {
+                    // Handle both 400 and other error responses
+                    errorDiv.textContent = result.message || 'Неверные учетные данные';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.textContent = 'Ошибка соединения с сервером. Проверьте подключение к интернету.';
+                errorDiv.style.display = 'block';
+            } finally {
+                // Re-enable button and reset submission flag
+                isSubmitting = false;
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Войти';
+            }
+        });
+    </script>
+}

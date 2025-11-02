@@ -1,0 +1,368 @@
+@{
+    ViewData["Title"] = "Сопоставление продуктов";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">Сопоставление продуктов</h3>
+                    <div>
+                        <button class="btn btn-success" onclick="autoMapProducts()">Автоматическое сопоставление</button>
+                        <button class="btn btn-primary" onclick="showCreateMappingModal()">Добавить сопоставление</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Поиск по названию или коду продукта...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-control" id="statusFilter">
+                                <option value="">Все статусы</option>
+                                <option value="unmapped">Не сопоставлено</option>
+                                <option value="mapped">Сопоставлено</option>
+                                <option value="approved">Утверждено</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-secondary" onclick="clearFilters()">Очистить фильтры</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="mappingsTable">
+                            <thead>
+                                <tr>
+                                    <th>Код продукта</th>
+                                    <th>Название продукта</th>
+                                    <th>Единица измерения</th>
+                                    <th>Продукт СВС</th>
+                                    <th>Статус</th>
+                                    <th>Дата создания</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal для создания/редактирования сопоставления -->
+<div class="modal fade" id="mappingModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mappingModalTitle">Добавить сопоставление</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="mappingForm">
+                    <input type="hidden" id="mappingId">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="externalProductCode" class="form-label">Код продукта (внешний)</label>
+                                <input type="text" class="form-control" id="externalProductCode" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="externalProductName" class="form-label">Название продукта (внешний)</label>
+                                <input type="text" class="form-control" id="externalProductName" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="externalUnit" class="form-label">Единица измерения (внешний)</label>
+                                <input type="text" class="form-control" id="externalUnit">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="externalGroup" class="form-label">Группа продукта (внешний)</label>
+                                <input type="text" class="form-control" id="externalGroup">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contractNumber" class="form-label">Номер договора</label>
+                        <input type="text" class="form-control" id="contractNumber">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="svsProductSearch" class="form-label">Поиск продукта в СВС</label>
+                        <input type="text" class="form-control" id="svsProductSearch" placeholder="Введите название или код продукта...">
+                        <div id="svsProductResults" class="mt-2"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="svsProductId" class="form-label">Выбранный продукт СВС</label>
+                        <select class="form-control" id="svsProductId">
+                            <option value="">Выберите продукт</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Примечания</label>
+                        <textarea class="form-control" id="notes" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isApproved">
+                            <label class="form-check-label" for="isApproved">
+                                Утверждено
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveMapping()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentMappings = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadMappings();
+    
+    // Обработчики поиска
+    document.getElementById('searchInput').addEventListener('input', filterMappings);
+    document.getElementById('statusFilter').addEventListener('change', filterMappings);
+    
+    // Обработчик поиска продуктов СВС
+    document.getElementById('svsProductSearch').addEventListener('input', function() {
+        const query = this.value;
+        if (query.length >= 2) {
+            searchSvsProducts(query);
+        } else {
+            document.getElementById('svsProductResults').innerHTML = '';
+        }
+    });
+});
+
+function loadMappings() {
+    fetch('/api/ProductMapping')
+        .then(response => response.json())
+        .then(data => {
+            currentMappings = data;
+            renderMappings(data);
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки сопоставлений:', error);
+        });
+}
+
+function renderMappings(mappings) {
+    const tbody = document.querySelector('#mappingsTable tbody');
+    tbody.innerHTML = '';
+    
+    mappings.forEach(mapping => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${mapping.externalProductCode}</td>
+            <td>${mapping.externalProductName}</td>
+            <td>${mapping.externalUnit || '-'}</td>
+            <td>${mapping.svsProductName || 'Не сопоставлено'}</td>
+            <td>
+                <span class="badge bg-${getStatusColor(mapping)}">${getStatusText(mapping)}</span>
+            </td>
+            <td>${new Date(mapping.createdAt).toLocaleDateString()}</td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editMapping(${mapping.id})">Редактировать</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteMapping(${mapping.id})">Удалить</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function getStatusColor(mapping) {
+    if (mapping.isApproved) return 'success';
+    if (mapping.svsProductId) return 'warning';
+    return 'secondary';
+}
+
+function getStatusText(mapping) {
+    if (mapping.isApproved) return 'Утверждено';
+    if (mapping.svsProductId) return 'Сопоставлено';
+    return 'Не сопоставлено';
+}
+
+function filterMappings() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    let filtered = currentMappings.filter(mapping => {
+        const matchesSearch = mapping.externalProductName.toLowerCase().includes(searchTerm) ||
+                            mapping.externalProductCode.toLowerCase().includes(searchTerm);
+        
+        let matchesStatus = true;
+        if (statusFilter === 'unmapped') {
+            matchesStatus = !mapping.svsProductId;
+        } else if (statusFilter === 'mapped') {
+            matchesStatus = mapping.svsProductId && !mapping.isApproved;
+        } else if (statusFilter === 'approved') {
+            matchesStatus = mapping.isApproved;
+        }
+        
+        return matchesSearch && matchesStatus;
+    });
+    
+    renderMappings(filtered);
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    renderMappings(currentMappings);
+}
+
+function showCreateMappingModal() {
+    document.getElementById('mappingModalTitle').textContent = 'Добавить сопоставление';
+    document.getElementById('mappingForm').reset();
+    document.getElementById('mappingId').value = '';
+    new bootstrap.Modal(document.getElementById('mappingModal')).show();
+}
+
+function editMapping(id) {
+    const mapping = currentMappings.find(m => m.id === id);
+    if (!mapping) return;
+    
+    document.getElementById('mappingModalTitle').textContent = 'Редактировать сопоставление';
+    document.getElementById('mappingId').value = mapping.id;
+    document.getElementById('externalProductCode').value = mapping.externalProductCode;
+    document.getElementById('externalProductName').value = mapping.externalProductName;
+    document.getElementById('externalUnit').value = mapping.externalUnit || '';
+    document.getElementById('externalGroup').value = mapping.externalGroup || '';
+    document.getElementById('contractNumber').value = mapping.contractNumber || '';
+    document.getElementById('svsProductId').value = mapping.svsProductId || '';
+    document.getElementById('notes').value = mapping.notes || '';
+    document.getElementById('isApproved').checked = mapping.isApproved;
+    
+    new bootstrap.Modal(document.getElementById('mappingModal')).show();
+}
+
+function searchSvsProducts(query) {
+    fetch(`/api/ProductMapping/search-svs-products?query=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(products => {
+            const resultsDiv = document.getElementById('svsProductResults');
+            resultsDiv.innerHTML = '';
+            
+            products.forEach(product => {
+                const div = document.createElement('div');
+                div.className = 'border p-2 mb-1 cursor-pointer';
+                div.innerHTML = `${product.name} (${product.code || 'без кода'})`;
+                div.onclick = () => selectSvsProduct(product);
+                resultsDiv.appendChild(div);
+            });
+        })
+        .catch(error => {
+            console.error('Ошибка поиска продуктов СВС:', error);
+        });
+}
+
+function selectSvsProduct(product) {
+    document.getElementById('svsProductId').value = product.id;
+    document.getElementById('svsProductResults').innerHTML = '';
+    document.getElementById('svsProductSearch').value = '';
+}
+
+function saveMapping() {
+    const mappingData = {
+        id: document.getElementById('mappingId').value || 0,
+        externalProductCode: document.getElementById('externalProductCode').value,
+        externalProductName: document.getElementById('externalProductName').value,
+        externalUnit: document.getElementById('externalUnit').value,
+        externalGroup: document.getElementById('externalGroup').value,
+        contractNumber: document.getElementById('contractNumber').value,
+        svsProductId: document.getElementById('svsProductId').value || null,
+        notes: document.getElementById('notes').value,
+        isApproved: document.getElementById('isApproved').checked
+    };
+    
+    const isEdit = mappingData.id > 0;
+    const url = isEdit ? `/api/ProductMapping/${mappingData.id}` : '/api/ProductMapping';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(mappingData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success !== false) {
+            bootstrap.Modal.getInstance(document.getElementById('mappingModal')).hide();
+            loadMappings();
+        } else {
+            alert('Ошибка при сохранении: ' + (data.message || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка сохранения:', error);
+        alert('Ошибка при сохранении');
+    });
+}
+
+function deleteMapping(id) {
+    if (confirm('Вы уверены, что хотите удалить это сопоставление?')) {
+        fetch(`/api/ProductMapping/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                loadMappings();
+            } else {
+                alert('Ошибка при удалении');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка удаления:', error);
+            alert('Ошибка при удалении');
+        });
+    }
+}
+
+function autoMapProducts() {
+    if (confirm('Выполнить автоматическое сопоставление несопоставленных продуктов?')) {
+        fetch('/api/ProductMapping/auto-map', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                loadMappings();
+            } else {
+                alert('Ошибка при автоматическом сопоставлении: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка автоматического сопоставления:', error);
+            alert('Ошибка при автоматическом сопоставлении');
+        });
+    }
+}
+</script>
+

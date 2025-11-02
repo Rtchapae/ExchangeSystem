@@ -1,0 +1,467 @@
+@{
+    ViewData["Title"] = "Импорт данных";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Импорт данных</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Импорт данных потребления</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="consumptionImportForm" enctype="multipart/form-data">
+                                        <div class="mb-3">
+                                            <label for="consumptionOrganization" class="form-label">Организация *</label>
+                                            <select class="form-select" id="consumptionOrganization" required>
+                                                <option value="">Выберите организацию</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="consumptionFile" class="form-label">Выберите CSV файл</label>
+                                            <input type="file" class="form-control" id="consumptionFile" accept=".csv" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Импортировать</button>
+                                    </form>
+                                    <div id="consumptionResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Импорт справочника продуктов</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="productsImportForm" enctype="multipart/form-data">
+                                        <div class="mb-3">
+                                            <label for="productsFile" class="form-label">Выберите CSV файл</label>
+                                            <input type="file" class="form-control" id="productsFile" accept=".csv" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Импортировать</button>
+                                    </form>
+                                    <div id="productsResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Импорт данных прихода</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="receiptsImportForm" enctype="multipart/form-data">
+                                        <div class="mb-3">
+                                            <label for="receiptsOrganization" class="form-label">Организация *</label>
+                                            <select class="form-select" id="receiptsOrganization" required>
+                                                <option value="">Выберите организацию</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="receiptsFile" class="form-label">Выберите CSV файл</label>
+                                            <input type="file" class="form-control" id="receiptsFile" accept=".csv" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Импортировать</button>
+                                    </form>
+                                    <div id="receiptsResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Импорт DBF файлов</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="dbfImportForm" enctype="multipart/form-data">
+                                        <div class="mb-3">
+                                            <label for="dbfOrganization" class="form-label">Организация *</label>
+                                            <select class="form-select" id="dbfOrganization" required>
+                                                <option value="">Выберите организацию</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dbfFile" class="form-label">Выберите DBF файл</label>
+                                            <input type="file" class="form-control" id="dbfFile" accept=".dbf,.xls,.xlsx" required>
+                                            <small class="text-muted">Поддерживаются файлы DBF, XLS, XLSX</small>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning">Импортировать DBF</button>
+                                    </form>
+                                    <div id="dbfResult" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-code me-2"></i>API для программного импорта данных
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Вы можете импортировать данные программно, отправляя HTTP запросы к API:</p>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-arrow-down me-2"></i>Импорт данных потребления (расход)</h6>
+                            <pre class="bg-light p-3 rounded"><code>POST /api/DataImport/consumption
+Content-Type: multipart/form-data
+
+Параметры:
+- file: CSV файл (формат как 1_2.csv)
+- organizationId: ID организации
+
+Пример (curl):
+curl -X POST \
+  http://localhost:5001/api/DataImport/consumption \
+  -F "file=@@1_2.csv" \
+  -F "organizationId=1"</code></pre>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-list me-2"></i>Импорт справочника продуктов</h6>
+                            <pre class="bg-light p-3 rounded"><code>POST /api/DataImport/products
+Content-Type: multipart/form-data
+
+Параметры:
+- file: CSV файл (формат как 2_2.csv)
+
+Пример (curl):
+curl -X POST \
+  http://localhost:5001/api/DataImport/products \
+  -F "file=@@2_2.csv"</code></pre>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-arrow-up me-2"></i>Импорт данных прихода (накладные)</h6>
+                            <pre class="bg-light p-3 rounded"><code>POST /api/DataImport/receipts
+Content-Type: multipart/form-data
+
+Параметры:
+- file: CSV файл (формат как 3_2.csv)
+- organizationId: ID организации
+
+Пример (curl):
+curl -X POST \
+  http://localhost:5001/api/DataImport/receipts \
+  -F "file=@@3_2.csv" \
+  -F "organizationId=1"</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-database me-2"></i>Импорт DBF файлов</h6>
+                            <pre class="bg-light p-3 rounded"><code>POST /api/DataImport/dbf
+Content-Type: multipart/form-data
+
+Параметры:
+- file: DBF/XLS/XLSX файл
+- organizationId: ID организации
+
+Пример (curl):
+curl -X POST \
+  http://localhost:5001/api/DataImport/dbf \
+  -F "file=@@data.dbf" \
+  -F "organizationId=1"</code></pre>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-exchange-alt me-2"></i>Интеграция с СВС</h6>
+                            <pre class="bg-light p-3 rounded"><code>POST /api/svs/materials
+Content-Type: application/json
+
+Параметры:
+- JSON справочника СВС
+- organizationId: ID организации (опционально)
+
+Пример (curl):
+curl -X POST \
+  http://localhost:5001/api/svs/materials \
+  -H "Content-Type: application/json" \
+  -d '{"MatItem":[{"GroupMatId":1492,"MatId":1377,"MeasureId":1,"NameGroupMat":"Банка","NameMat":"Банка пластик","NameMeasure":"шт"}]}'</code></pre>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-download me-2"></i>Экспорт сопоставлений</h6>
+                            <pre class="bg-light p-3 rounded"><code>GET /api/svs/export
+Параметры:
+- organizationId: ID организации (опционально)
+
+Пример (curl):
+curl -X GET \
+  http://localhost:5001/api/svs/export?organizationId=1 \
+  -o mappings.json</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Примечание:</strong> Для программного доступа через API рекомендуется использовать JWT токен авторизации. 
+                        Получить токен можно через <code>POST /api/auth/login</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">История импорта</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="importHistoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Дата импорта</th>
+                                    <th>Файл</th>
+                                    <th>Тип</th>
+                                    <th>Всего записей</th>
+                                    <th>Обработано</th>
+                                    <th>Успешно</th>
+                                    <th>Ошибок</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal для просмотра ошибок -->
+<div class="modal fade" id="errorsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ошибки импорта</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="errorsList"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Задержка для гарантии загрузки api.js
+    setTimeout(function() {
+        loadImportHistory();
+        loadOrganizations();
+    }, 100);
+    
+    // Обработчики форм импорта
+    document.getElementById('consumptionImportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const organizationId = document.getElementById('consumptionOrganization').value;
+        importData('consumption', 'consumptionFile', 'consumptionResult', organizationId);
+    });
+    
+    document.getElementById('productsImportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        importData('products', 'productsFile', 'productsResult');
+    });
+    
+    document.getElementById('receiptsImportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const organizationId = document.getElementById('receiptsOrganization').value;
+        importData('receipts', 'receiptsFile', 'receiptsResult', organizationId);
+    });
+    
+    document.getElementById('dbfImportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const organizationId = document.getElementById('dbfOrganization').value;
+        importData('dbf', 'dbfFile', 'dbfResult', organizationId);
+    });
+});
+
+async function loadOrganizations() {
+    try {
+        console.log('Загрузка организаций...');
+        
+        // Используем прямой fetch вместо api для надежности
+        const response = await fetch('/api/stores');
+        const result = await response.json();
+        
+        console.log('Ответ сервера:', result);
+        
+        if (result && result.success) {
+            const organizations = result.data;
+            console.log('Найдено организаций:', organizations.length);
+            
+            // Заполняем селекты
+            const selects = ['consumptionOrganization', 'receiptsOrganization', 'dbfOrganization'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.innerHTML = '<option value="">Выберите организацию</option>';
+                    organizations.forEach(org => {
+                        const option = document.createElement('option');
+                        option.value = org.id;
+                        option.textContent = `${org.name} (${org.city || 'нет города'})`;
+                        select.appendChild(option);
+                    });
+                    console.log(`Селект ${selectId} заполнен, опций:`, select.options.length);
+                } else {
+                    console.error(`Селект ${selectId} не найден!`);
+                }
+            });
+        } else {
+            console.error('Ошибка в ответе сервера:', result);
+        }
+    } catch (error) {
+        console.error('Ошибка при загрузке организаций:', error);
+    }
+}
+
+async function importData(type, fileInputId, resultDivId, organizationId = null) {
+    const fileInput = document.getElementById(fileInputId);
+    const resultDiv = document.getElementById(resultDivId);
+    
+    if (!fileInput.files[0]) {
+        showResult(resultDiv, 'Ошибка: Файл не выбран', 'danger');
+        return;
+    }
+    
+    if (organizationId && !organizationId) {
+        showResult(resultDiv, 'Ошибка: Выберите организацию', 'danger');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    if (organizationId) {
+        formData.append('organizationId', organizationId);
+    }
+    
+    showResult(resultDiv, 'Импорт в процессе...', 'info');
+    
+    try {
+        const response = await fetch(`/api/DataImport/${type}`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showResult(resultDiv, 
+                `Импорт завершен успешно!<br>
+                 Организация: ${organizationId ? 'ID ' + organizationId : 'Не указана'}<br>
+                 Всего записей: ${data.totalRecords}<br>
+                 Обработано: ${data.processedRecords}<br>
+                 Успешно: ${data.successRecords}<br>
+                 Ошибок: ${data.errorRecords}`, 
+                'success');
+            loadImportHistory();
+        } else {
+            showResult(resultDiv, 
+                `Ошибка импорта: ${data.message}<br>
+                 Ошибки: ${data.errors ? data.errors.join('<br>') : ''}`, 
+                'danger');
+        }
+    } catch (error) {
+        showResult(resultDiv, `Ошибка: ${error.message}`, 'danger');
+    }
+}
+
+function showResult(element, message, type) {
+    element.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+}
+
+function loadImportHistory() {
+    fetch('/api/DataImport/history')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.querySelector('#importHistoryTable tbody');
+            tbody.innerHTML = '';
+            
+            data.forEach(log => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(log.importDate).toLocaleString()}</td>
+                    <td>${log.fileName}</td>
+                    <td>${log.importType}</td>
+                    <td>${log.totalRecords}</td>
+                    <td>${log.processedRecords}</td>
+                    <td>${log.successRecords}</td>
+                    <td>${log.errorRecords}</td>
+                    <td><span class="badge bg-${getStatusColor(log.status)}">${log.status}</span></td>
+                    <td>
+                        ${log.errorRecords > 0 ? `<button class="btn btn-sm btn-warning" onclick="showErrors(${log.id})">Показать ошибки</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки истории импорта:', error);
+        });
+}
+
+function getStatusColor(status) {
+    switch(status) {
+        case 'Completed': return 'success';
+        case 'Failed': return 'danger';
+        case 'Processing': return 'warning';
+        default: return 'secondary';
+    }
+}
+
+function showErrors(importLogId) {
+    fetch(`/api/DataImport/errors/${importLogId}`)
+        .then(response => response.json())
+        .then(errors => {
+            const errorsList = document.getElementById('errorsList');
+            errorsList.innerHTML = '';
+            
+            if (errors.length === 0) {
+                errorsList.innerHTML = '<p>Ошибок не найдено</p>';
+            } else {
+                errors.forEach(error => {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-warning';
+                    errorDiv.innerHTML = `
+                        <strong>Строка ${error.rowNumber}:</strong> ${error.errorMessage}
+                    `;
+                    errorsList.appendChild(errorDiv);
+                });
+            }
+            
+            new bootstrap.Modal(document.getElementById('errorsModal')).show();
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки ошибок:', error);
+        });
+}
+</script>
