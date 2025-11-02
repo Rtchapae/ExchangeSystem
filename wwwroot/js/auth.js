@@ -23,6 +23,7 @@ class Auth {
         try {
             const response = await fetch('/api/auth/validate', {
                 method: 'POST',
+                credentials: 'include', // Включаем отправку cookies
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -43,6 +44,7 @@ class Auth {
         try {
             const response = await fetch('/api/auth/validate', {
                 method: 'POST',
+                credentials: 'include', // Включаем отправку cookies
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

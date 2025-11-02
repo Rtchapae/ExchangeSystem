@@ -9,6 +9,7 @@ namespace ExchangeSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class DataController : ControllerBase
     {
         private readonly IProductService _productService;
@@ -137,6 +138,34 @@ namespace ExchangeSystem.Controllers
                     .Where(op => op.OrganizationId == organizationId.Value && productIds.Contains(op.ProductId))
                     .ToDictionaryAsync(op => op.ProductId, op => op.SvsCode);
 
+                // Автоматически создаем сопоставления для продуктов, у которых есть глобальный SvsCode, но нет в OrganizationProduct
+                var productsWithoutOrgMapping = items
+                    .Where(i => !svsMappings.ContainsKey(i.ProductId) && 
+                                i.Product != null && 
+                                !string.IsNullOrEmpty(i.Product.SvsCode))
+                    .Select(i => i.Product)
+                    .Distinct()
+                    .ToList();
+
+                if (productsWithoutOrgMapping.Any())
+                {
+                    foreach (var product in productsWithoutOrgMapping)
+                    {
+                        var orgProduct = new OrganizationProduct
+                        {
+                            OrganizationId = organizationId.Value,
+                            ProductId = product.Id,
+                            SvsCode = product.SvsCode,
+                            IsActive = true,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        _context.OrganizationProducts.Add(orgProduct);
+                        svsMappings[product.Id] = product.SvsCode;
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
                 var result = items.Select(i => new
                 {
                     id = i.Id,
@@ -208,6 +237,34 @@ namespace ExchangeSystem.Controllers
                 var svsMappings = await _context.OrganizationProducts
                     .Where(op => op.OrganizationId == organizationId.Value && productIds.Contains(op.ProductId))
                     .ToDictionaryAsync(op => op.ProductId, op => op.SvsCode);
+
+                // Автоматически создаем сопоставления для продуктов, у которых есть глобальный SvsCode, но нет в OrganizationProduct
+                var productsWithoutOrgMapping = items
+                    .Where(i => !svsMappings.ContainsKey(i.ProductId) && 
+                                i.Product != null && 
+                                !string.IsNullOrEmpty(i.Product.SvsCode))
+                    .Select(i => i.Product)
+                    .Distinct()
+                    .ToList();
+
+                if (productsWithoutOrgMapping.Any())
+                {
+                    foreach (var product in productsWithoutOrgMapping)
+                    {
+                        var orgProduct = new OrganizationProduct
+                        {
+                            OrganizationId = organizationId.Value,
+                            ProductId = product.Id,
+                            SvsCode = product.SvsCode,
+                            IsActive = true,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        _context.OrganizationProducts.Add(orgProduct);
+                        svsMappings[product.Id] = product.SvsCode;
+                    }
+                    await _context.SaveChangesAsync();
+                }
 
                 var result = items.Select(i => new
                 {

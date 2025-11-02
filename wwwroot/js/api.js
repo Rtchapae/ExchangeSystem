@@ -16,6 +16,7 @@ class ApiClient {
         const url = cleanEndpoint;
 
         const defaultOptions = {
+            credentials: 'include', // Включаем отправку cookies для авторизации
             headers: {
                 'Content-Type': 'application/json',
                 ...(token && { 'Authorization': `Bearer ${token}` })
@@ -28,7 +29,8 @@ class ApiClient {
             headers: {
                 ...defaultOptions.headers,
                 ...options.headers
-            }
+            },
+            credentials: 'include' // Убеждаемся, что credentials включен
         };
 
         try {
@@ -96,6 +98,7 @@ class ApiClient {
         try {
             const response = await fetch(url, {
                 method: 'POST',
+                credentials: 'include', // Включаем отправку cookies для авторизации
                 headers: {
                     ...(token && { 'Authorization': `Bearer ${token}` })
                 },

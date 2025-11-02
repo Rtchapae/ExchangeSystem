@@ -16,7 +16,7 @@ namespace ExchangeSystem.Services
             _logger = logger;
         }
 
-        public async Task<List<ProductMappingResult>> MapProductsToSvsAsync(List<SvsMaterialItem> svsMaterials, int? organizationId = null)
+        public async Task<List<ProductMappingResult>> MapProductsToSvsAsync(List<SvsMaterialItem> svsMaterials, int? organizationId = null, bool autoSaveMappings = false)
         {
             var results = new List<ProductMappingResult>();
             
@@ -39,15 +39,59 @@ namespace ExchangeSystem.Services
                     
                     if (existingMapping != null)
                     {
-                        mappingResult.SvsCode = existingMapping.SvsCode;
-                        mappingResult.IsAutoMapped = false;
+                        // Если есть автоматическое сопоставление с кодом, обновляем существующее
+                        if (mappingResult.IsAutoMapped && !string.IsNullOrEmpty(mappingResult.SvsCode))
+                        {
+                            // Обновляем только если код изменился или был пуст
+                            if (existingMapping.SvsCode != mappingResult.SvsCode)
+                            {
+                                existingMapping.SvsCode = mappingResult.SvsCode;
+                                existingMapping.UpdatedAt = DateTime.UtcNow;
+                                await _context.SaveChangesAsync();
+                                
+                                _logger.LogInformation("Обновлено сопоставление для продукта '{ProductName}' (ID: {ProductId}) с кодом СВС {SvsCode} для организации {OrganizationId}", 
+                                    product.Name, product.Id, mappingResult.SvsCode, organizationId);
+                            }
+                            mappingResult.IsAutoMapped = true;
+                        }
+                        else
+                        {
+                            mappingResult.SvsCode = existingMapping.SvsCode;
+                            mappingResult.IsAutoMapped = false;
+                        }
+                    }
+                    else if (mappingResult.IsAutoMapped && !string.IsNullOrEmpty(mappingResult.SvsCode) && autoSaveMappings)
+                    {
+                        // Автоматически сохраняем сопоставление для организации
+                        var newMapping = new OrganizationProduct
+                        {
+                            OrganizationId = organizationId.Value,
+                            ProductId = product.Id,
+                            SvsCode = mappingResult.SvsCode,
+                            IsActive = true,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        _context.OrganizationProducts.Add(newMapping);
+                        await _context.SaveChangesAsync();
+                        
+                        _logger.LogInformation("Автоматически сохранено сопоставление для продукта '{ProductName}' (ID: {ProductId}) с кодом СВС {SvsCode} для организации {OrganizationId}", 
+                            product.Name, product.Id, mappingResult.SvsCode, organizationId);
                     }
                 }
                 else
                 {
                     // Для общего справочника используем глобальный код СВС
-                    mappingResult.SvsCode = product.SvsCode;
-                    mappingResult.IsAutoMapped = false;
+                    if (mappingResult.IsAutoMapped && !string.IsNullOrEmpty(mappingResult.SvsCode))
+                    {
+                        product.SvsCode = mappingResult.SvsCode;
+                        product.UpdatedAt = DateTime.UtcNow;
+                        await _context.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        mappingResult.SvsCode = product.SvsCode;
+                    }
                 }
 
                 results.Add(mappingResult);
@@ -66,8 +110,8 @@ namespace ExchangeSystem.Services
                 SvsCode = product.SvsCode
             };
 
-            // Ищем лучшее совпадение
-            var bestMatch = FindBestMatch(product.Name, svsMaterials);
+            // Ищем лучшее совпадение (проверяем и NameMat и NameGroupMat)
+            var bestMatch = FindBestMatch(product.Name, product.Category, svsMaterials);
             
             if (bestMatch != null)
             {
@@ -77,31 +121,107 @@ namespace ExchangeSystem.Services
                 result.SvsGroupName = bestMatch.NameGroupMat;
                 result.SvsMeasure = bestMatch.NameMeasure;
                 result.IsAutoMapped = true;
-                result.Confidence = CalculateConfidence(product.Name, bestMatch.NameMat);
                 
-                // Если уверенность высокая, автоматически устанавливаем код СВС
-                if (result.Confidence > 0.8)
+                // Определяем уверенность на основе совпадения
+                var nameMatConfidence = CalculateConfidence(product.Name, bestMatch.NameMat);
+                var nameGroupMatConfidence = !string.IsNullOrWhiteSpace(product.Category) 
+                    ? CalculateConfidence(product.Category, bestMatch.NameGroupMat)
+                    : CalculateConfidence(product.Name, bestMatch.NameGroupMat);
+                
+                result.Confidence = Math.Max(nameMatConfidence, nameGroupMatConfidence);
+                
+                // Если есть совпадение по NameMat или NameGroupMat, автоматически устанавливаем MatId как SvsCode
+                var normalizedProductName = NormalizeString(product.Name);
+                var normalizedNameMat = NormalizeString(bestMatch.NameMat);
+                var normalizedNameGroupMat = NormalizeString(bestMatch.NameGroupMat);
+                var normalizedCategory = !string.IsNullOrWhiteSpace(product.Category) ? NormalizeString(product.Category) : null;
+                
+                // Проверяем точное совпадение (без учета регистра и пробелов)
+                bool exactNameMatMatch = normalizedProductName.Equals(normalizedNameMat, StringComparison.OrdinalIgnoreCase) ||
+                                        product.Name.Equals(bestMatch.NameMat, StringComparison.OrdinalIgnoreCase);
+                
+                bool exactNameGroupMatMatch = !string.IsNullOrWhiteSpace(product.Category) &&
+                                             (normalizedCategory != null && normalizedCategory.Equals(normalizedNameGroupMat, StringComparison.OrdinalIgnoreCase) ||
+                                              product.Category.Equals(bestMatch.NameGroupMat, StringComparison.OrdinalIgnoreCase));
+                
+                // Проверяем частичное совпадение (если одно название содержит другое)
+                bool containsNameMat = normalizedProductName.Contains(normalizedNameMat, StringComparison.OrdinalIgnoreCase) ||
+                                      normalizedNameMat.Contains(normalizedProductName, StringComparison.OrdinalIgnoreCase);
+                
+                bool containsNameGroupMat = (normalizedCategory != null && 
+                                           (normalizedCategory.Contains(normalizedNameGroupMat, StringComparison.OrdinalIgnoreCase) ||
+                                            normalizedNameGroupMat.Contains(normalizedCategory, StringComparison.OrdinalIgnoreCase))) ||
+                                           normalizedProductName.Contains(normalizedNameGroupMat, StringComparison.OrdinalIgnoreCase) ||
+                                           normalizedNameGroupMat.Contains(normalizedProductName, StringComparison.OrdinalIgnoreCase);
+                
+                // Проверяем схожесть (более низкий порог для установки кода)
+                bool similarNameMat = CalculateSimilarity(normalizedProductName, normalizedNameMat) >= 0.6;
+                bool similarNameGroupMat = (normalizedCategory != null && CalculateSimilarity(normalizedCategory, normalizedNameGroupMat) >= 0.6) ||
+                                          CalculateSimilarity(normalizedProductName, normalizedNameGroupMat) >= 0.6;
+                
+                // Если есть любое совпадение - устанавливаем код
+                if (exactNameMatMatch || exactNameGroupMatMatch || containsNameMat || containsNameGroupMat || similarNameMat || similarNameGroupMat)
                 {
                     result.SvsCode = bestMatch.MatId.ToString();
+                    
+                    // Устанавливаем высокую уверенность для точных совпадений
+                    if (exactNameMatMatch || exactNameGroupMatMatch)
+                    {
+                        result.Confidence = 1.0;
+                    }
+                    else if (containsNameMat || containsNameGroupMat)
+                    {
+                        result.Confidence = 0.9;
+                    }
+                    else
+                    {
+                        result.Confidence = Math.Max(nameMatConfidence, nameGroupMatConfidence);
+                    }
+                    
+                    _logger.LogInformation("Автоматически сопоставлен продукт '{ProductName}' (ID: {ProductId}) с СВС '{SvsName}' (MatId: {MatId}), Confidence: {Confidence}", 
+                        product.Name, product.Id, bestMatch.NameMat, bestMatch.MatId, result.Confidence);
                 }
+            }
+            else
+            {
+                _logger.LogDebug("Не найдено совпадений для продукта '{ProductName}' (ID: {ProductId})", product.Name, product.Id);
             }
 
             return result;
         }
 
-        private SvsMaterialItem? FindBestMatch(string productName, List<SvsMaterialItem> svsMaterials)
+        private SvsMaterialItem? FindBestMatch(string productName, string? productCategory, List<SvsMaterialItem> svsMaterials)
         {
             if (string.IsNullOrWhiteSpace(productName))
                 return null;
 
             var normalizedProductName = NormalizeString(productName);
+            var normalizedCategory = !string.IsNullOrWhiteSpace(productCategory) ? NormalizeString(productCategory) : null;
+
             var bestMatch = svsMaterials
                 .Select(svs => new
                 {
                     Item = svs,
-                    Score = CalculateSimilarity(normalizedProductName, NormalizeString(svs.NameMat))
+                    // Проверяем совпадение с NameMat (приоритет выше)
+                    NameMatScore = CalculateSimilarity(normalizedProductName, NormalizeString(svs.NameMat)),
+                    // Проверяем совпадение с NameGroupMat
+                    NameGroupMatScore = normalizedCategory != null 
+                        ? CalculateSimilarity(normalizedCategory, NormalizeString(svs.NameGroupMat))
+                        : CalculateSimilarity(normalizedProductName, NormalizeString(svs.NameGroupMat)),
+                    // Проверяем точное совпадение
+                    ExactNameMatMatch = productName.Equals(svs.NameMat, StringComparison.OrdinalIgnoreCase),
+                    ExactNameGroupMatMatch = !string.IsNullOrWhiteSpace(productCategory) && 
+                        productCategory.Equals(svs.NameGroupMat, StringComparison.OrdinalIgnoreCase)
                 })
-                .Where(x => x.Score > 0.3) // Минимальный порог схожести
+                .Select(x => new
+                {
+                    x.Item,
+                    // Используем максимальный score, приоритет точному совпадению
+                    Score = x.ExactNameMatMatch ? 1.0 : 
+                           (x.ExactNameGroupMatMatch ? 0.95 :
+                           Math.Max(x.NameMatScore, x.NameGroupMatScore * 0.8)) // NameMat имеет больший вес
+                })
+                .Where(x => x.Score > 0.2) // Понижаем минимальный порог схожести для лучшего поиска
                 .OrderByDescending(x => x.Score)
                 .FirstOrDefault();
 
@@ -151,10 +271,20 @@ namespace ExchangeSystem.Services
             if (string.IsNullOrEmpty(input))
                 return "";
 
-            // Убираем лишние символы и приводим к нижнему регистру
-            return Regex.Replace(input.ToLowerInvariant(), @"[^\w\s]", " ")
+            // Убираем лишние символы, пробелы и приводим к нижнему регистру
+            // Также убираем скобки и другие специальные символы
+            var normalized = input.ToLowerInvariant()
+                .Replace("(", " ")
+                .Replace(")", " ")
+                .Replace("-", " ")
+                .Replace("_", " ");
+            
+            normalized = Regex.Replace(normalized, @"[^\w\s]", " ")
                 .Replace("  ", " ")
+                .Replace("  ", " ") // Двойной вызов для удаления всех двойных пробелов
                 .Trim();
+
+            return normalized;
         }
 
         public async Task<List<ProductMappingResult>> GetMappingResultsAsync(int? organizationId = null)

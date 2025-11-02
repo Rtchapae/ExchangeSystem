@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ExchangeSystem.Data;
 using ExchangeSystem.Models;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ExchangeSystem.Services
 {
@@ -10,15 +11,18 @@ namespace ExchangeSystem.Services
         private readonly ExchangeDbContext _context;
         private readonly ICsvParserService _csvParser;
         private readonly ILogger<DataImportService> _logger;
+        private readonly IServiceProvider _serviceProvider;
 
         public DataImportService(
             ExchangeDbContext context,
             ICsvParserService csvParser,
-            ILogger<DataImportService> logger)
+            ILogger<DataImportService> logger,
+            IServiceProvider serviceProvider)
         {
             _context = context;
             _csvParser = csvParser;
             _logger = logger;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<ImportResult> ImportConsumptionDataAsync(Stream csvStream, string fileName, int? organizationId = null)
@@ -256,7 +260,7 @@ namespace ExchangeSystem.Services
                 }
                 importLog.CompletedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
                 return new ImportResult
                 {
@@ -269,8 +273,8 @@ namespace ExchangeSystem.Services
                     Errors = parseResult.Errors,
                     Message = importLog.SuccessRecords > 0 ? "Импорт успешно завершен" : "Импорт завершен с ошибками"
                 };
-                }
-                catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при импорте данных прихода из файла {FileName}", fileName);
                 
@@ -314,6 +318,26 @@ namespace ExchangeSystem.Services
                     if (product == null)
                     {
                         continue;
+                    }
+
+                    // Автоматически подтягиваем SvsCode из OrganizationProduct при наличии организации
+                    if (organizationId.HasValue)
+                    {
+                        var orgProduct = await _context.OrganizationProducts
+                            .FirstOrDefaultAsync(op => op.OrganizationId == organizationId.Value && op.ProductId == product.Id);
+                        
+                        if (orgProduct != null && !string.IsNullOrEmpty(orgProduct.SvsCode))
+                        {
+                            // Обновляем глобальный SvsCode продукта, если его еще нет
+                            if (string.IsNullOrEmpty(product.SvsCode))
+                            {
+                                product.SvsCode = orgProduct.SvsCode;
+                                product.UpdatedAt = DateTime.UtcNow;
+                                await _context.SaveChangesAsync();
+                            }
+                            _logger.LogDebug("Для продукта {ProductName} (ID: {ProductId}) подтянут SvsCode {SvsCode} из справочника организации {OrganizationId}", 
+                                product.Name, product.Id, orgProduct.SvsCode, organizationId);
+                        }
                     }
 
                     // Сохранение данных по яслям
@@ -497,6 +521,26 @@ namespace ExchangeSystem.Services
                         continue;
                     }
 
+                    // Автоматически подтягиваем SvsCode из OrganizationProduct при наличии организации
+                    if (organizationId.HasValue)
+                    {
+                        var orgProduct = await _context.OrganizationProducts
+                            .FirstOrDefaultAsync(op => op.OrganizationId == organizationId.Value && op.ProductId == product.Id);
+                        
+                        if (orgProduct != null && !string.IsNullOrEmpty(orgProduct.SvsCode))
+                        {
+                            // Обновляем глобальный SvsCode продукта, если его еще нет
+                            if (string.IsNullOrEmpty(product.SvsCode))
+                            {
+                                product.SvsCode = orgProduct.SvsCode;
+                                product.UpdatedAt = DateTime.UtcNow;
+                                await _context.SaveChangesAsync();
+                            }
+                            _logger.LogDebug("Для продукта {ProductName} (ID: {ProductId}) подтянут SvsCode {SvsCode} из справочника организации {OrganizationId}", 
+                                product.Name, product.Id, orgProduct.SvsCode, organizationId);
+                        }
+                    }
+
                     // Вычисляем цену из общей стоимости и количества
                     var price = row.Quantity > 0 ? row.TotalCost / row.Quantity : 0m;
                     var unit = !string.IsNullOrWhiteSpace(row.Unit) ? row.Unit : (product.Unit ?? "");
@@ -600,8 +644,8 @@ namespace ExchangeSystem.Services
                 
                 try
                 {
-                await _context.SaveChangesAsync();
-            }
+                    await _context.SaveChangesAsync();
+                }
                 catch (DbUpdateException)
                 {
                     // Если все равно ошибка дубликата, ищем существующий
@@ -668,8 +712,10 @@ namespace ExchangeSystem.Services
                 var errorRecords = 0;
                 var errors = new List<string>();
 
+                var rowNumber = 0;
                 foreach (var item in jsonData.MatItem)
                 {
+                    rowNumber++;
                     try
                     {
                         var svsMaterial = new SvsMaterial
@@ -690,12 +736,57 @@ namespace ExchangeSystem.Services
                     catch (Exception ex)
                     {
                         errorRecords++;
-                        errors.Add($"Ошибка при обработке материала {item.NameMat}: {ex.Message}");
+                        var errorMessage = $"Ошибка при обработке материала {item.NameMat}: {ex.Message}";
+                        errors.Add(errorMessage);
+                        
+                        _context.DataImportErrors.Add(new DataImportError
+                        {
+                            ImportLogId = importLog.Id,
+                            RowNumber = rowNumber,
+                            ErrorType = "ProcessingError",
+                            ErrorMessage = errorMessage
+                        });
                     }
                     processedRecords++;
                 }
 
                 await _context.SaveChangesAsync();
+
+                // После импорта выполняем автоматическое сопоставление продуктов с СВС
+                if (successRecords > 0 && organizationId.HasValue)
+                {
+                    try
+                    {
+                        var productMappingService = _serviceProvider.GetRequiredService<IProductMappingService>();
+                        // Преобразуем MatItem в SvsMaterialItem
+                        var svsMaterialsList = jsonData.MatItem.Select(m => new SvsMaterialItem
+                        {
+                            GroupMatId = m.GroupMatId,
+                            MatId = m.MatId,
+                            MeasureId = m.MeasureId,
+                            NameGroupMat = m.NameGroupMat,
+                            NameMat = m.NameMat,
+                            NameMeasure = m.NameMeasure
+                        }).ToList();
+                        
+                        _logger.LogInformation("Начинаем автоматическое сопоставление продуктов с СВС для организации {OrganizationId}", organizationId);
+                        
+                        // Выполняем сопоставление и автоматически сохраняем найденные совпадения
+                        var mappingResults = await productMappingService.MapProductsToSvsAsync(
+                            svsMaterialsList, 
+                            organizationId, 
+                            autoSaveMappings: true); // Автоматически сохраняем сопоставления
+                        
+                        var autoMappedCount = mappingResults.Count(m => m.IsAutoMapped && !string.IsNullOrEmpty(m.SvsCode));
+                        _logger.LogInformation("Автоматически сопоставлено {AutoMappedCount} продуктов из {TotalProducts}", 
+                            autoMappedCount, mappingResults.Count);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Ошибка при автоматическом сопоставлении продуктов с СВС");
+                        errors.Add($"Предупреждение: Ошибка при автоматическом сопоставлении: {ex.Message}");
+                    }
+                }
 
                 importLog.Status = "Completed";
                 importLog.TotalRecords = totalRecords;

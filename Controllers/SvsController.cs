@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using ExchangeSystem.Models;
 using ExchangeSystem.Services;
 using System.Text.Json;
@@ -8,6 +9,7 @@ namespace ExchangeSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class SvsController : ControllerBase
     {
         private readonly IProductMappingService _mappingService;
@@ -34,8 +36,8 @@ namespace ExchangeSystem.Controllers
 
                 _logger.LogInformation($"Получен справочник СВС: {request.MatItem.Count} материалов");
 
-                // Выполняем автоматическое сопоставление
-                var mappingResults = await _mappingService.MapProductsToSvsAsync(request.MatItem, educationDepartmentId);
+                // Выполняем автоматическое сопоставление (без автсохранения, так как это отдельный вызов)
+                var mappingResults = await _mappingService.MapProductsToSvsAsync(request.MatItem, educationDepartmentId, autoSaveMappings: false);
 
                 var mappedCount = mappingResults.Count(m => !string.IsNullOrEmpty(m.SvsCode));
                 var unmappedCount = mappingResults.Count - mappedCount;

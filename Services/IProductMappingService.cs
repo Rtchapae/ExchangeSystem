@@ -4,7 +4,7 @@ namespace ExchangeSystem.Services
 {
     public interface IProductMappingService
     {
-        Task<List<ProductMappingResult>> MapProductsToSvsAsync(List<SvsMaterialItem> svsMaterials, int? organizationId = null);
+        Task<List<ProductMappingResult>> MapProductsToSvsAsync(List<SvsMaterialItem> svsMaterials, int? organizationId = null, bool autoSaveMappings = false);
         Task<ProductMappingResult> MapSingleProductAsync(Product product, List<SvsMaterialItem> svsMaterials);
         Task<List<ProductMappingResult>> GetMappingResultsAsync(int? organizationId = null);
         Task<bool> SaveMappingAsync(int productId, int svsMatId, string svsCode, int? organizationId = null);

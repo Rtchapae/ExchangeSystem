@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using ExchangeSystem.Services;
 using ExchangeSystem.Models;
 
@@ -6,6 +7,7 @@ namespace ExchangeSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class DataImportController : ControllerBase
     {
         private readonly IDataImportService _dataImportService;

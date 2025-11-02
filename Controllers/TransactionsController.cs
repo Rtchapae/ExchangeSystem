@@ -7,7 +7,7 @@ namespace ExchangeSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize] - временно отключено для тестирования
+    [Authorize]
     public class TransactionsController : ControllerBase
     {
         private readonly ITransactionService _transactionService;

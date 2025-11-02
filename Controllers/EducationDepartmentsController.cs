@@ -9,6 +9,7 @@ namespace ExchangeSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class EducationDepartmentsController : ControllerBase
     {
         private readonly ExchangeDbContext _context;
@@ -21,7 +22,6 @@ namespace ExchangeSystem.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous] // Временно для тестирования
         public async Task<IActionResult> GetEducationDepartments()
         {
             try

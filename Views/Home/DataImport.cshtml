@@ -43,23 +43,6 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="card-title">Импорт справочника продуктов</h5>
-                                </div>
-                                <div class="card-body">
-                                    <form id="productsImportForm" enctype="multipart/form-data">
-                                        <div class="mb-3">
-                                            <label for="productsFile" class="form-label">Выберите CSV файл</label>
-                                            <input type="file" class="form-control" id="productsFile" accept=".csv" required>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary">Импортировать</button>
-                                    </form>
-                                    <div id="productsResult" class="mt-3"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
                                     <h5 class="card-title">Импорт данных прихода</h5>
                                 </div>
                                 <div class="card-body">
@@ -379,10 +362,10 @@ document.addEventListener('DOMContentLoaded', function() {
         importData('consumption', 'consumptionFile', 'consumptionResult', organizationId);
     });
     
-    document.getElementById('productsImportForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        importData('products', 'productsFile', 'productsResult');
-    });
+    // document.getElementById('productsImportForm').addEventListener('submit', function(e) {
+    //     e.preventDefault();
+    //     importData('products', 'productsFile', 'productsResult');
+    // });
     
     document.getElementById('receiptsImportForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -406,6 +389,10 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const educationDepartmentId = document.getElementById('jsonEducationDepartment').value;
             const organizationId = document.getElementById('jsonOrganization').value;
+            if (!educationDepartmentId) {
+                showResult(document.getElementById('jsonResult'), 'Ошибка: Необходимо выбрать УО', 'danger');
+                return;
+            }
             importData('json', 'jsonFile', 'jsonResult', organizationId || null, educationDepartmentId);
         });
 });
@@ -414,7 +401,9 @@ async function loadEducationDepartments() {
     try {
         console.log('Загрузка УО...');
         
-        const response = await fetch('/api/educationdepartments');
+        const response = await fetch('/api/educationdepartments', {
+            credentials: 'include'
+        });
         const result = await response.json();
         
         console.log('Ответ сервера УО:', result);
@@ -424,7 +413,7 @@ async function loadEducationDepartments() {
             console.log('Найдено УО:', educationDepartments.length);
             
             // Заполняем селекты УО
-            const selects = ['consumptionEducationDepartment', 'receiptsEducationDepartment', 'dbfEducationDepartment', 'jsonEducationDepartment'];
+            const selects = ['consumptionEducationDepartment', 'receiptsEducationDepartment', 'dbfEducationDepartment', 'dbfReceiptsEducationDepartment', 'jsonEducationDepartment'];
             selects.forEach(selectId => {
                 const select = document.getElementById(selectId);
                 if (select) {
@@ -464,7 +453,9 @@ async function loadOrganizationsForEducationDepartment(formType) {
     try {
         console.log(`Загрузка организаций для УО ${educationDepartmentId}...`);
         
-        const response = await fetch(`/api/stores/by-education-department/${educationDepartmentId}`);
+        const response = await fetch(`/api/stores/by-education-department/${educationDepartmentId}`, {
+            credentials: 'include'
+        });
         const result = await response.json();
         
         console.log('Ответ сервера организаций:', result);
@@ -521,6 +512,7 @@ async function importData(type, fileInputId, resultDivId, organizationId = null,
     try {
         const response = await fetch(`/api/DataImport/${type}`, {
             method: 'POST',
+            credentials: 'include',
             body: formData
         });
         
@@ -556,7 +548,9 @@ function showResult(element, message, type) {
 }
 
 function loadImportHistory() {
-    fetch('/api/DataImport/history')
+    fetch('/api/DataImport/history', {
+        credentials: 'include'
+    })
         .then(response => response.json())
         .then(data => {
             const tbody = document.querySelector('#importHistoryTable tbody');
@@ -595,7 +589,9 @@ function getStatusColor(status) {
 }
 
 function showErrors(importLogId) {
-    fetch(`/api/DataImport/errors/${importLogId}`)
+    fetch(`/api/DataImport/errors/${importLogId}`, {
+        credentials: 'include'
+    })
         .then(response => response.json())
         .then(errors => {
             const errorsList = document.getElementById('errorsList');

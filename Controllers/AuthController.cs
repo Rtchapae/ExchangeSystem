@@ -7,10 +7,12 @@ using System.Text;
 using BCrypt.Net;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
 namespace ExchangeSystem.Controllers
 {
+    [AllowAnonymous] // Контроллер авторизации должен быть доступен без входа
     public class AuthController : Controller
     {
         private readonly ExchangeDbContext _context;
@@ -189,7 +191,7 @@ namespace ExchangeSystem.Controllers
                     new ClaimsPrincipal(claimsIdentity),
                     authProperties);
 
-                return RedirectToAction("DataImport", "Home");
+                return RedirectToAction("Dashboard", "Home");
             }
             catch (Exception ex)
             {

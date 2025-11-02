@@ -4,6 +4,7 @@ using ExchangeSystem.Services;
 
 namespace ExchangeSystem.Controllers
 {
+    [Authorize]
     public class HomeController : Controller
     {
         private readonly IDataJoinService _dataJoinService;
@@ -23,60 +24,52 @@ namespace ExchangeSystem.Controllers
             _transactionService = transactionService;
         }
 
+        [AllowAnonymous]
         public IActionResult Index()
         {
             return View();
         }
-
 
         public IActionResult Dashboard()
         {
             return View();
         }
 
-        [Authorize]
         public IActionResult Products()
         {
             return View();
         }
 
-        [Authorize]
         public IActionResult Stores()
         {
             return View();
         }
 
-        [Authorize]
         public IActionResult Transactions()
         {
             return View();
         }
 
-        [Authorize]
         public IActionResult Import()
         {
             return View();
         }
 
-        [Authorize]
         public IActionResult DataImport()
         {
             return View();
         }
 
-        [Authorize]
         public IActionResult ProductMapping()
         {
             return View();
         }
 
-        [Authorize]
         public IActionResult Reports()
         {
             return View();
         }
 
-        [Authorize]
         public IActionResult ProductsComparison()
         {
             return View();

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ExchangeSystem.Data;
 using ExchangeSystem.Models;
@@ -7,6 +8,7 @@ namespace ExchangeSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ExportsController : ControllerBase
     {
         private readonly ExchangeDbContext _context;

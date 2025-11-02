@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using BCrypt.Net;
 
 namespace ExchangeSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [AllowAnonymous] // Тестовый контроллер - публичный доступ
     public class TestController : ControllerBase
     {
         [HttpGet("password")]
