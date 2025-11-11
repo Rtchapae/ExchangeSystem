@@ -2,6 +2,17 @@
     ViewData["Title"] = "Сопоставление данных";
 }
 
+<style>
+    #modalExistingSvsContainer {
+        max-height: 280px;
+        overflow-y: auto;
+    }
+
+    #modalExistingSvsList .list-group-item {
+        cursor: pointer;
+    }
+</style>
+
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -94,6 +105,22 @@
                         <input type="text" class="form-control" id="modalProductName" readonly>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Существующие коды СВС</label>
+                        <button class="btn btn-outline-secondary w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#modalExistingSvsCollapse" aria-expanded="false" aria-controls="modalExistingSvsCollapse" id="modalExistingSvsToggle">
+                            <i class="fas fa-list me-2"></i><span id="modalExistingSvsSelectedText">Показать список кодов</span>
+                        </button>
+                        <div class="collapse mt-2" id="modalExistingSvsCollapse">
+                            <div class="border rounded p-0" id="modalExistingSvsContainer">
+                                <div class="p-2 border-bottom">
+                                    <input type="text" class="form-control form-control-sm" id="modalExistingSvsListFilter" placeholder="Фильтр по списку...">
+                                </div>
+                                <div id="modalExistingSvsPlaceholder" class="text-muted small p-2">Сначала выберите организацию.</div>
+                                <div id="modalExistingSvsList" class="list-group list-group-flush small"></div>
+                            </div>
+                        </div>
+                        <div class="form-text">Раскройте список, чтобы выбрать код, или введите новый вручную.</div>
+                    </div>
+                    <div class="mb-3">
                         <label for="modalSvsCode" class="form-label">Код СВС</label>
                         <input type="text" class="form-control" id="modalSvsCode" placeholder="Введите код СВС">
                     </div>
@@ -110,6 +137,8 @@
         let allData = [];
         let currentDataType = 'consumption';
         let currentOrganizationId = null;
+        let organizationSvsCodesCache = new Map();
+        let currentOrganizationSvsCodes = [];
 
         document.addEventListener('DOMContentLoaded', async function () {
             await loadEducationDepartmentsForMapping();
@@ -140,6 +169,9 @@
                     const response = await api.put(endpoint, { svsCode: svsCode });
                     if (response.success) {
                         resultDiv.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
+                        if (currentOrganizationId) {
+                            organizationSvsCodesCache.delete(currentOrganizationId);
+                        }
                         const modal = bootstrap.Modal.getInstance(document.getElementById('editSvsCodeModal'));
                         modal.hide();
                         await loadData(); // Перезагружаем данные после сохранения
@@ -150,6 +182,10 @@
                     console.error('Ошибка сохранения кода СВС:', error);
                     resultDiv.innerHTML = `<div class="alert alert-danger">Произошла ошибка: ${error.message || 'Неизвестная ошибка.'}</div>`;
                 }
+            });
+
+            document.getElementById('modalExistingSvsListFilter').addEventListener('input', function () {
+                filterExistingSvsCodes(this.value);
             });
         });
 
@@ -320,12 +356,20 @@
             }
         }
 
-        function openEditModal(recordId, recordType, productName, currentSvsCode) {
+        async function openEditModal(recordId, recordType, productName, currentSvsCode) {
             document.getElementById('modalRecordId').value = recordId;
             document.getElementById('modalRecordType').value = recordType;
             document.getElementById('modalProductName').value = productName;
             document.getElementById('modalSvsCode').value = currentSvsCode;
             document.getElementById('svsCodeFormResult').innerHTML = '';
+            document.getElementById('modalExistingSvsListFilter').value = '';
+            document.getElementById('modalExistingSvsSelectedText').textContent = currentSvsCode ? `Текущий код: ${currentSvsCode}` : 'Показать список кодов';
+            const collapseElement = document.getElementById('modalExistingSvsCollapse');
+            if (collapseElement.classList.contains('show')) {
+                bootstrap.Collapse.getInstance(collapseElement)?.hide();
+            }
+
+            await populateExistingSvsCodes(currentOrganizationId, currentSvsCode);
             
             const modal = new bootstrap.Modal(document.getElementById('editSvsCodeModal'));
             modal.show();
@@ -339,6 +383,117 @@
                 (item.svsCode && item.svsCode.toLowerCase().includes(searchInput))
             );
             displayData(filtered, currentDataType);
+        }
+
+        async function populateExistingSvsCodes(organizationId, currentSvsCode) {
+            const listElement = document.getElementById('modalExistingSvsList');
+            const placeholder = document.getElementById('modalExistingSvsPlaceholder');
+
+            if (!organizationId) {
+                listElement.innerHTML = '';
+                placeholder.textContent = 'Сначала выберите организацию.';
+                placeholder.classList.remove('d-none');
+                currentOrganizationSvsCodes = [];
+                return;
+            }
+
+            listElement.innerHTML = '';
+            placeholder.textContent = 'Загрузка...';
+            placeholder.classList.remove('d-none');
+
+            try {
+                const svsCodes = await loadOrganizationSvsCodes(organizationId);
+                currentOrganizationSvsCodes = svsCodes;
+
+                if (svsCodes.length === 0) {
+                    placeholder.textContent = 'Нет сохраненных кодов.';
+                    return;
+                }
+
+                placeholder.classList.add('d-none');
+                renderExistingSvsOptions(svsCodes, currentSvsCode);
+            } catch (error) {
+                console.error('Ошибка при загрузке кодов СВС организации:', error);
+                listElement.innerHTML = '';
+                placeholder.textContent = 'Ошибка загрузки кодов СВС.';
+                placeholder.classList.remove('d-none');
+            }
+        }
+
+        function renderExistingSvsOptions(codes, currentSvsCode) {
+            const listElement = document.getElementById('modalExistingSvsList');
+            const placeholder = document.getElementById('modalExistingSvsPlaceholder');
+            const selectedText = document.getElementById('modalExistingSvsSelectedText');
+
+            listElement.innerHTML = '';
+            placeholder.classList.toggle('d-none', codes.length > 0);
+            const normalizedCurrent = (currentSvsCode || '').toLowerCase();
+
+            codes.forEach(entry => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'list-group-item list-group-item-action';
+                button.dataset.svsCode = entry.svsCode;
+                button.innerHTML = `
+                    <div class="fw-semibold">${entry.svsCode}</div>
+                    <div class="text-muted small">${entry.productName}${entry.productCode ? ` (${entry.productCode})` : ''}</div>
+                `;
+
+                if (entry.svsCode.toLowerCase() === normalizedCurrent) {
+                    button.classList.add('active');
+                    selectedText.textContent = `Выбранный код: ${entry.svsCode}`;
+                }
+
+                button.addEventListener('click', () => {
+                    document.getElementById('modalSvsCode').value = entry.svsCode;
+                    selectedText.textContent = `Выбранный код: ${entry.svsCode}`;
+                    Array.from(listElement.children).forEach(item => item.classList.remove('active'));
+                    button.classList.add('active');
+                });
+
+                listElement.appendChild(button);
+            });
+        }
+
+        function filterExistingSvsCodes(query) {
+            const normalizedQuery = query.trim().toLowerCase();
+
+            if (!normalizedQuery) {
+                renderExistingSvsOptions(currentOrganizationSvsCodes, document.getElementById('modalSvsCode').value);
+                return;
+            }
+
+            const filtered = currentOrganizationSvsCodes.filter(entry =>
+                entry.svsCode.toLowerCase().includes(normalizedQuery) ||
+                entry.productName.toLowerCase().includes(normalizedQuery) ||
+                (entry.productCode && entry.productCode.toLowerCase().includes(normalizedQuery))
+            );
+
+            renderExistingSvsOptions(filtered, document.getElementById('modalSvsCode').value);
+        }
+
+        async function loadOrganizationSvsCodes(organizationId) {
+            if (organizationSvsCodesCache.has(organizationId)) {
+                return organizationSvsCodesCache.get(organizationId);
+            }
+
+            const response = await api.get(`/api/organizationproducts?organizationId=${organizationId}`);
+
+            if (!response.success || !Array.isArray(response.data)) {
+                return [];
+            }
+
+            const codes = response.data
+                .filter(item => item.svsCode)
+                .map(item => ({
+                    svsCode: item.svsCode,
+                    productName: item.product?.name || 'Без названия',
+                    productCode: item.product?.code || ''
+                }))
+                .sort((a, b) => a.productName.localeCompare(b.productName, 'ru', { sensitivity: 'base' }));
+
+            organizationSvsCodesCache.set(organizationId, codes);
+            return codes;
         }
 
         function downloadExport() {
